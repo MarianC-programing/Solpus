@@ -1,0 +1,4 @@
+# Configuración de hlint (versión fijada en scripts/install-tools.sh).
+# Sin reglas ignoradas por defecto: si una sugerencia no aplica, se justifica
+# aquí con un comentario y se acota al módulo afectado.
+- arguments: [--color=never]

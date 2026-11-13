@@ -9,6 +9,9 @@ cabal.sandbox.config
 *.dyn_o
 .stack-work/
 
+# Herramientas descargadas por scripts/install-tools.sh
+.tools/
+
 # Solana: claves y estado local. Nunca se versionan.
 test-ledger/
 *-keypair.json
