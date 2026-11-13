@@ -1,0 +1,26 @@
+# Haskell / Cabal
+dist-newstyle/
+.cabal-sandbox/
+cabal.sandbox.config
+.ghc.environment.*
+*.hi
+*.o
+*.dyn_hi
+*.dyn_o
+.stack-work/
+
+# Solana: claves y estado local. Nunca se versionan.
+test-ledger/
+*-keypair.json
+id.json
+keypair*.json
+*.pem
+.env
+.env.*
+!.env.example
+
+# Editor y sistema
+.vscode/
+.idea/
+.DS_Store
+*.swp
