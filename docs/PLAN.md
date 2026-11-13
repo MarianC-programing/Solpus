@@ -28,8 +28,8 @@ terceros, interfaz web, indexador.
 | `bytestring` | `>=0.11 && <0.12` | Verificado: límite del SDK |
 | `websockets` y `wuss` | las que resuelva cabal | El SDK no trae WebSocket: lo aportamos nosotros, solo en `solpus-client` |
 | `tasty`, `tasty-hunit`, `hedgehog`, `optparse-applicative` | las que resuelva cabal con GHC 9.6.7 | Se congelan en `cabal.project.freeze` |
-| `fourmolu`, `hlint` | las que instale `ghcup`/cabal con GHC 9.6.7 | Se anotan en `docs/CONTEXT.md` durante el issue #2 |
-| `cabal-install` | la que recomiende `ghcup` | Se anota durante el issue #1 |
+| `fourmolu`, `hlint` | **0.21.0.0** y **3.10** (binarios oficiales) | Verificado: `fourmolu` coincide con el digest de GitHub; `hlint` no publica digest y su suma se fijó en la primera descarga |
+| `cabal-install` | **3.18.2.0** | Instalada con `ghcup` el 2026-11-13 |
 
 Notas:
 
@@ -108,12 +108,12 @@ solpus-cli → solpus-app → solpus-client → solpus-core
 | Área | Elección |
 | --- | --- |
 | Compilador y build | GHC 9.6.7 y cabal vía `ghcup` |
-| Formato | `fourmolu` |
-| Lint | `hlint`; compilación con `-Wall -Wcompat -Werror` en CI |
+| Formato | `fourmolu` 0.21.0.0 (binario oficial, suma SHA-256 fijada en `scripts/install-tools.sh`) |
+| Lint | `hlint` 3.10 (idem); compilación con `-Wall -Wcompat` y `-Werror` en CI y `pre-push` |
 | Pruebas | `tasty`, `tasty-hunit`, `hedgehog` |
 | CLI | `optparse-applicative` |
-| CI | GitHub Actions con `haskell-actions/setup` fijando GHC 9.6.7, caché de `~/.cabal` y `dist-newstyle` |
-| Hooks locales | `pre-commit` o `lefthook`: `fourmolu --mode check` y `hlint` al commit; `cabal build all` y `cabal test unit` al push |
+| CI | GitHub Actions: jobs `build` y `lint` (nombres estables, checks obligatorios de `main`); acciones fijadas por SHA; GHC 9.6.7 y cabal 3.18.2.0; se ejecuta en cada PR y en cada push a `main` |
+| Hooks locales | Hooks nativos de Git versionados en `.githooks/` (sin dependencias extra), activados con `scripts/setup-hooks.sh`: `pre-commit` (fourmolu y hlint sobre los `.hs` preparados) y `pre-push` (`cabal build all --ghc-options=-Werror`) |
 
 ## 6. Fases e issues
 
