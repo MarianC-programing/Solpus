@@ -1,0 +1,15 @@
+* text=auto eol=lf
+
+*.hs text diff=haskell
+*.cabal text
+cabal.project text
+cabal.project.freeze text
+*.md text diff=markdown
+*.yml text
+*.yaml text
+*.json text
+
+# Binarios
+*.png binary
+*.jpg binary
+*.pdf binary
