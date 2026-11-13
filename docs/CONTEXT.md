@@ -38,23 +38,41 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 4. Estado actual
 
-### Hecho (sesión 1)
+### Hecho
 - Carpeta `Solpus/` creada (renombrada desde un nombre provisional).
 - `README.md`, `.gitignore`, `docs/PLAN.md` (v2), `docs/WORKFLOW.md` y
   `docs/adr/0001-frontera-con-el-sdk.md`.
-- Plan **aprobado** por la persona responsable.
+- Plan **aprobado** por la persona responsable (2026-11-12).
+- Repositorio **privado** `MarianC-programing/Solpus` creado; `main` publicado
+  con el commit inicial de documentación.
+- Issues #1–#13 creados con la numeración del plan; #14 para las plantillas.
+- Etiquetas de tipo, área, prioridad, riesgo y estado.
+- Ajustes del repo: solo *squash merge*, rama borrada tras el merge.
+- Protección de `main`: PR obligatorio, historial lineal, sin force push ni
+  borrado, conversaciones resueltas, vigente también para administradores.
+  Sin checks obligatorios todavía (no existe CI; se añaden en el issue #2).
+- Plantillas de issue y PR, `.editorconfig`, `.gitattributes`, `CODEOWNERS`
+  (issue #14).
 
 ### No hecho
-- Sin repositorio Git, remoto, issues ni tarjeta de Trello.
+- Sin tarjeta de Trello (opcional en este proyecto).
 - Sin código, `cabal.project` ni CI.
-- Nada se compiló ni se probó contra un validador.
+- **La toolchain de Haskell no está instalada** en esta máquina (`ghc`, `cabal`
+  y `ghcup` no existen). Nada se ha compilado ni probado; el issue #1 necesita
+  instalarla (GHC 9.6.7).
+
+### Notas de entorno
+- `ProyectosDev/` es a su vez un repositorio Git (sin commits ni remoto).
+  `Solpus/` tiene su propio `.git`; no ejecutar comandos de Git desde el padre.
+- La clave SSH de esta máquina no está aceptada por GitHub, así que el remoto
+  usa HTTPS con el helper de `gh` configurado solo en este repo
+  (`credential.helper` local).
 
 ## 5. Siguiente paso
 
-1. La persona responsable autoriza crear el repositorio remoto `Solpus` y los
-   issues #1–#4 (acción remota).
-2. `git init` local y rama `chore/1-esqueleto-monorepo`.
-3. Spike #4 antes que el resto.
+1. Revisar y mergear el PR de plantillas (issue #14), con autorización explícita.
+2. Instalar GHC 9.6.7 y cabal con `ghcup` (requiere autorización: toca la máquina).
+3. Issue #1 en la rama `chore/1-esqueleto-monorepo`; después #4 (spike).
 
 ## 6. Archivos relevantes
 
