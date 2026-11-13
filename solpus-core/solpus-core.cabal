@@ -1,0 +1,17 @@
+cabal-version:      3.0
+name:               solpus-core
+version:            0.1.0.0
+synopsis:           Dominio puro de Solpus (sin IO)
+build-type:         Simple
+
+common warnings
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates
+               -Wincomplete-uni-patterns -Wredundant-constraints
+
+library
+  import:           warnings
+  exposed-modules:  Solpus.Core.Version
+  build-depends:    base  >=4.18 && <4.19
+                  , text  >=2.0  && <2.1
+  hs-source-dirs:   src
+  default-language: GHC2021
