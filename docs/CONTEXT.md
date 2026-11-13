@@ -1,6 +1,6 @@
 # Solpus — Contexto y estado de la sesión
 
-> Última actualización: 2026-11-12 · Sesión 1
+> Última actualización: 2026-11-13 · Sesión 1
 > Leer este archivo antes de continuar (regla 1 del `CLAUDE.md` general).
 
 ## 1. Qué es el proyecto
@@ -31,10 +31,18 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 - Verificadas en Hackage: GHC 9.6.7 (probado por el SDK), `base` 4.18, `aeson`
   2.2, `text` 2.0, `bytestring` 0.11, `web3` y `web3-provider` 1.1.
+- Toolchain instalada con `ghcup` (2026-11-13): **GHC 9.6.7** (`base` 4.18.3.0) y
+  **cabal-install 3.18.2.0**, en `~/.ghcup/bin`. `ghcup` también instaló HLS
+  por su cuenta (no solicitado). No se modificó `.bashrc` ni `.profile`: para
+  usarla hay que hacer `export PATH="$HOME/.ghcup/bin:$PATH"`.
+- `index-state` fijado en `2026-11-13T18:09:53Z`; las dependencias de boot
+  quedan congeladas en `cabal.project.freeze` (`text` 2.0.2, `bytestring`
+  0.11.5.4).
 - **1.4.0.0 del SDK existe pero no se pudo leer** (Hackage bloqueó la consulta).
   No se adopta; se evalúa en el spike #4.
-- El resto (cabal, fourmolu, hlint, tasty, hedgehog, optparse-applicative,
-  websockets, wuss) se resuelve y congela en los issues #1 y #2.
+- El resto (fourmolu, hlint, tasty, hedgehog, optparse-applicative,
+  websockets, wuss) se resuelve y congela en los issues #2 y siguientes.
+- `libnuma-dev` no está instalado y no hizo falta para compilar ni enlazar.
 
 ## 4. Estado actual
 
@@ -53,26 +61,28 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   Sin checks obligatorios todavía (no existe CI; se añaden en el issue #2).
 - Plantillas de issue y PR, `.editorconfig`, `.gitattributes`, `CODEOWNERS`
   (issue #14).
+- Esqueleto del monorepo (issue #1): cuatro paquetes con módulos mínimos que
+  prueban las aristas `cli → app → client → core`. `cabal build all
+  --ghc-options=-Werror` compila sin advertencias y `cabal run solpus-cli`
+  imprime `solpus-app -> solpus-client 0.1.0.0`. Sin el SDK todavía.
 
 ### No hecho
 - Sin tarjeta de Trello (opcional en este proyecto).
-- Sin código, `cabal.project` ni CI.
-- **La toolchain de Haskell no está instalada** en esta máquina (`ghc`, `cabal`
-  y `ghcup` no existen). Nada se ha compilado ni probado; el issue #1 necesita
-  instalarla (GHC 9.6.7).
+- Sin pruebas, CI, hooks, formato ni lint (issue #2 y siguientes).
+- Sin dependencia del SDK ni acceso a red (issues #4 y #7).
 
 ### Notas de entorno
 - `ProyectosDev/` es a su vez un repositorio Git (sin commits ni remoto).
   `Solpus/` tiene su propio `.git`; no ejecutar comandos de Git desde el padre.
-- La clave SSH de esta máquina no está aceptada por GitHub, así que el remoto
-  usa HTTPS con el helper de `gh` configurado solo en este repo
-  (`credential.helper` local).
+- La clave SSH (`~/.ssh/id_ed25519`) está registrada en GitHub, pero tiene
+  passphrase y el shell del asistente no tiene `ssh-agent`, por lo que SSH
+  falla allí con `Permission denied`. El remoto usa HTTPS con el helper de `gh`
+  configurado solo en este repo (`credential.helper` local).
 
 ## 5. Siguiente paso
 
-1. Revisar y mergear el PR de plantillas (issue #14), con autorización explícita.
-2. Instalar GHC 9.6.7 y cabal con `ghcup` (requiere autorización: toca la máquina).
-3. Issue #1 en la rama `chore/1-esqueleto-monorepo`; después #4 (spike).
+1. Revisar y mergear el PR del esqueleto (issue #1), con autorización explícita.
+2. Issue #2 (calidad y CI) y spike #4.
 
 ## 6. Archivos relevantes
 
