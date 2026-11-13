@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Módulo mínimo que ancla el paquete y comprueba la arista de dependencia
--- con @solpus-client@. Se sustituye por los casos de uso reales (issue #9).
+{- | Módulo mínimo que ancla el paquete y comprueba la arista de dependencia
+con @solpus-client@. Se sustituye por los casos de uso reales (issue #9).
+-}
 module Solpus.App.Info
   ( appInfo
   ) where
