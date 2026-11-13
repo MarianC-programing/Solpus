@@ -1,0 +1,18 @@
+cabal-version:      3.0
+name:               solpus-cli
+version:            0.1.0.0
+synopsis:           Ejecutable de línea de comandos de Solpus
+build-type:         Simple
+
+common warnings
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates
+               -Wincomplete-uni-patterns -Wredundant-constraints
+
+executable solpus-cli
+  import:           warnings
+  main-is:          Main.hs
+  build-depends:    base        >=4.18 && <4.19
+                  , text        >=2.0  && <2.1
+                  , solpus-app
+  hs-source-dirs:   app
+  default-language: GHC2021

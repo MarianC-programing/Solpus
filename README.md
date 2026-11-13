@@ -4,7 +4,8 @@ Cliente Solana en Haskell: una **librería** modular y una **CLI** para consulta
 saldos, enviar SOL y operar con tokens SPL, con la red de pruebas como entorno
 por defecto.
 
-> Estado: **plan aprobado, sin código todavía**. El plan está en
+> Estado: **fase 0 en curso**. Existe el esqueleto del monorepo; todavía no hay
+> lógica de Solana. El plan está en
 > [`docs/PLAN.md`](docs/PLAN.md) y la memoria operativa en
 > [`docs/CONTEXT.md`](docs/CONTEXT.md).
 
@@ -42,10 +43,16 @@ Solpus/
 | [`docs/WORKFLOW.md`](docs/WORKFLOW.md) | Flujo de trabajo adaptado a Haskell |
 | [`docs/adr/`](docs/adr/) | Decisiones de arquitectura duraderas |
 
-## Comandos (a partir de la fase 0)
+## Requisitos
+
+GHC 9.6.7 y cabal (por ejemplo con [`ghcup`](https://www.haskell.org/ghcup/)).
+
+## Comandos
 
 ```bash
 cabal build all
-cabal test unit
-cabal run solpus-cli -- --help
+cabal run solpus-cli
 ```
+
+Las pruebas (`cabal test`) y los subcomandos de la CLI llegan en fases
+posteriores (ver [`docs/PLAN.md`](docs/PLAN.md)).
