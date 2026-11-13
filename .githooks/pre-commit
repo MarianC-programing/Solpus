@@ -1,0 +1,23 @@
+#!/usr/bin/env sh
+# pre-commit: formato y lint de los .hs preparados. Rápido; el build completo
+# corre en pre-push y en CI. No se omite con --no-verify.
+set -eu
+
+root=$(git rev-parse --show-toplevel)
+PATH="$root/.tools/bin:$HOME/.ghcup/bin:$PATH"
+
+for tool in fourmolu hlint; do
+  command -v "$tool" >/dev/null 2>&1 || {
+    echo "Falta $tool. Ejecuta: sh scripts/install-tools.sh" >&2
+    exit 1
+  }
+done
+
+files=$(git diff --cached --name-only --diff-filter=ACM -- '*.hs')
+[ -z "$files" ] && exit 0
+
+cd "$root"
+# shellcheck disable=SC2086
+fourmolu --mode check $files
+# shellcheck disable=SC2086
+hlint $files
