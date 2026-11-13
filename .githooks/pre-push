@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+# pre-push: el proyecto debe compilar sin advertencias antes de publicar.
+# Las pruebas unitarias se añaden aquí cuando existan (issue #5).
+# No se omite con --no-verify.
+set -eu
+
+root=$(git rev-parse --show-toplevel)
+PATH="$HOME/.ghcup/bin:$PATH"
+
+command -v cabal >/dev/null 2>&1 || {
+  echo "Falta cabal. Instala GHC 9.6.7 y cabal con ghcup." >&2
+  exit 1
+}
+
+cd "$root"
+cabal build all --ghc-options=-Werror

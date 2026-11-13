@@ -30,12 +30,15 @@ autorización** para cualquier cambio externo o irreversible.
 4. **Implementación** mínima, con pruebas y documentación.
 5. **Verificación local:**
    ```bash
-   cabal build all
-   cabal test unit
-   hlint .
-   fourmolu --mode check $(git ls-files '*.hs')
+   sh scripts/install-tools.sh        # una vez: fourmolu y hlint fijados
+   sh scripts/setup-hooks.sh          # una vez por clon: activa .githooks/
+   cabal build all --ghc-options=-Werror
+   .tools/bin/fourmolu --mode check $(git ls-files '*.hs')
+   .tools/bin/hlint $(git ls-files '*.hs')
    ```
-   Más `cabal test integration` cuando el cambio toque red.
+   Más `cabal test` cuando existan suites (issue #5) y `cabal test integration`
+   cuando el cambio toque red. Los hooks (`pre-commit`: formato y lint;
+   `pre-push`: build sin advertencias) y CI ejecutan lo mismo.
 6. **Revisión** independiente del diff. Riesgo medio o alto: dos pasadas
    (corrección y seguridad; mantenibilidad y arquitectura). Los hallazgos
    `P0` y `P1` bloquean.

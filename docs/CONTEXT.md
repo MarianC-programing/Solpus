@@ -40,8 +40,14 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   0.11.5.4).
 - **1.4.0.0 del SDK existe pero no se pudo leer** (Hackage bloqueó la consulta).
   No se adopta; se evalúa en el spike #4.
-- El resto (fourmolu, hlint, tasty, hedgehog, optparse-applicative,
-  websockets, wuss) se resuelve y congela en los issues #2 y siguientes.
+- `fourmolu` **0.21.0.0** y `hlint` **3.10**: binarios oficiales instalados en
+  `.tools/bin` (ignorado por Git) con `sh scripts/install-tools.sh`. La suma de
+  `fourmolu` coincide con el digest de GitHub; la de `hlint` se fijó en la
+  primera descarga porque GitHub no publica digest para ese asset.
+- Acciones de CI fijadas por SHA: `actions/checkout` v7.0.1,
+  `haskell-actions/setup` v2.12.1, `actions/cache` v6.1.0.
+- El resto (tasty, hedgehog, optparse-applicative, websockets, wuss) se
+  resuelve y congela en los issues siguientes.
 - `libnuma-dev` no está instalado y no hizo falta para compilar ni enlazar.
 
 ## 4. Estado actual
@@ -65,10 +71,24 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   prueban las aristas `cli → app → client → core`. `cabal build all
   --ghc-options=-Werror` compila sin advertencias y `cabal run solpus-cli`
   imprime `solpus-app -> solpus-client 0.1.0.0`. Sin el SDK todavía.
+- Calidad y CI (issue #2): `fourmolu.yaml`, `.hlint.yaml`, workflow de CI con
+  jobs `build` y `lint`, hooks nativos en `.githooks/` y scripts de
+  instalación. Código existente formateado con fourmolu; `hlint` sin hallazgos.
+
+### Desviaciones respecto al plan (issue #2)
+- **Hooks nativos de Git en lugar de `lefthook`/`pre-commit`**: cero
+  dependencias nuevas (ni Go ni Python). Se activan con
+  `sh scripts/setup-hooks.sh`.
+- **CI solo en `pull_request` y en `push` a `main`**, no en cada push a ramas
+  de trabajo: un PR ya cubre esas ramas y se evita ejecutar todo dos veces.
+- El hook `pre-commit` comprueba los archivos del árbol de trabajo, no el
+  contenido exacto del índice; CI es el control definitivo.
 
 ### No hecho
 - Sin tarjeta de Trello (opcional en este proyecto).
-- Sin pruebas, CI, hooks, formato ni lint (issue #2 y siguientes).
+- Sin pruebas automatizadas (llegan con el issue #5).
+- Checks obligatorios (`build`, `lint`) en la protección de `main`: se activan
+  cuando CI haya corrido en verde (parte del issue #2).
 - Sin dependencia del SDK ni acceso a red (issues #4 y #7).
 
 ### Notas de entorno
@@ -81,8 +101,10 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 5. Siguiente paso
 
-1. Revisar y mergear el PR del esqueleto (issue #1), con autorización explícita.
-2. Issue #2 (calidad y CI) y spike #4.
+1. Revisar y mergear el PR de calidad y CI (issue #2), con autorización explícita.
+2. Activar `build` y `lint` como checks obligatorios y demostrar con un PR
+   desechable que un código sin formato falla en CI.
+3. Spike #4 y fase 1.
 
 ## 6. Archivos relevantes
 

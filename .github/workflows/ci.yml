@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GHC_VERSION: "9.6.7"
+  CABAL_VERSION: "3.18.2.0"
+
+jobs:
+  # Nombres de job estables: son los checks obligatorios de la protección de main.
+  build:
+    name: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: haskell-actions/setup@0f8e8c99d88aeb3fbfd523f1ef2c6f762d10d64d # v2.12.1
+        with:
+          ghc-version: ${{ env.GHC_VERSION }}
+          cabal-version: ${{ env.CABAL_VERSION }}
+
+      - name: Actualizar índice de Hackage
+        run: cabal update
+
+      - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cabal/store
+            dist-newstyle
+          key: cabal-${{ runner.os }}-ghc${{ env.GHC_VERSION }}-${{ hashFiles('cabal.project', 'cabal.project.freeze', '**/*.cabal') }}
+          restore-keys: |
+            cabal-${{ runner.os }}-ghc${{ env.GHC_VERSION }}-
+
+      - name: Compilar sin advertencias
+        run: cabal build all --ghc-options=-Werror
+
+  lint:
+    name: lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Instalar fourmolu y hlint (versiones y sumas fijadas)
+        run: sh scripts/install-tools.sh
+
+      - name: Formato (fourmolu)
+        run: .tools/bin/fourmolu --mode check $(git ls-files '*.hs')
+
+      - name: Lint (hlint)
+        run: .tools/bin/hlint $(git ls-files '*.hs')

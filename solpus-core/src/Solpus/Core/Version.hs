@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
--- | Versión de Solpus. Módulo mínimo que ancla el paquete mientras llegan los
--- tipos del dominio (issue #5).
+{- | Versión de Solpus. Módulo mínimo que ancla el paquete mientras llegan los
+tipos del dominio (issue #5).
+-}
 module Solpus.Core.Version
   ( solpusVersion
   ) where

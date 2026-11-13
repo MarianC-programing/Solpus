@@ -11,9 +11,9 @@ indent_size = 2
 [*.md]
 trim_trailing_whitespace = false
 
-# 4 es el valor por defecto de fourmolu; se confirma en el issue #2.
+# Debe coincidir con `indentation` de fourmolu.yaml.
 [*.hs]
-indent_size = 4
+indent_size = 2
 
 [Makefile]
 indent_style = tab
