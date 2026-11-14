@@ -9,3 +9,7 @@ with-compiler: ghc-9.6.7
 
 -- Índice de Hackage fijado para builds reproducibles.
 index-state: 2026-11-13T18:09:53Z
+
+-- Las suites de pruebas se construyen con `cabal build all` y se ejecutan con
+-- `cabal test all`.
+tests: True
