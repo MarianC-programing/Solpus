@@ -30,7 +30,7 @@ Solpus/
 ├── solpus-client/   única frontera con solana-haskell-sdk
 ├── solpus-app/      casos de uso (transferir, saldo, tokens, confirmar)
 ├── solpus-cli/      ejecutable
-├── test/            unitarias, propiedades e integración
+├── <paquete>/test/ suites de pruebas, dentro de cada paquete
 └── docs/            contexto, plan, flujo de trabajo y ADRs
 ```
 
@@ -51,8 +51,9 @@ GHC 9.6.7 y cabal (por ejemplo con [`ghcup`](https://www.haskell.org/ghcup/)).
 
 ```bash
 cabal build all
+cabal test all
 cabal run solpus-cli
 ```
 
-Las pruebas (`cabal test`) y los subcomandos de la CLI llegan en fases
-posteriores (ver [`docs/PLAN.md`](docs/PLAN.md)).
+Los subcomandos de la CLI llegan en fases posteriores (ver
+[`docs/PLAN.md`](docs/PLAN.md)).

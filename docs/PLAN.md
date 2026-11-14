@@ -85,10 +85,10 @@ Solpus/
 │       └── Confirm.hs      política de confirmación y reintentos
 ├── solpus-cli/
 │   └── app/Main.hs         optparse-applicative; solo parseo y salida
-└── test/
-    ├── unit/               tasty + hedgehog
-    ├── golden/             vectores de serialización
-    └── integration/        contra solana-test-validator
+└── <paquete>/test/         suites de pruebas dentro de cada paquete (cabal)
+    ├── unit                tasty + hedgehog (solpus-core ya la tiene)
+    ├── golden              vectores de serialización (solpus-client)
+    └── integration         contra solana-test-validator (solpus-client)
 ```
 
 ### Reglas de dependencia

@@ -41,6 +41,8 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 - **SDK `solana-haskell-sdk` 1.4.0.0** (adoptada tras el spike #4, en lugar de
   la 1.3.0.0 prevista): mismos límites de dependencias, mismo comportamiento y
   correcciones relevantes. Detalle en `docs/spikes/0001-sdk.md`.
+- Dependencias de pruebas congeladas en `cabal.project.freeze`: `hedgehog` 1.7,
+  `tasty` 1.5.5, `tasty-hedgehog` 1.4.0.2, `tasty-hunit` 0.10.2.
 - **Agave 4.4.1** (`solana-test-validator`), release oficial verificado por
   SHA-256, instalado fuera del repo en `~/.local/share/solpus-spike/` sin tocar
   `PATH` ni perfiles. Su RPC escucha en `0.0.0.0` y no se puede restringir:
@@ -85,6 +87,13 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   Agave 4.4.1. Errores como excepciones (no `Left`), confirmación por
   WebSocket en 0,14–0,39 s frente a 13–14 s de finalización, y 127 paquetes en
   frío. Se adopta la 1.4.0.0.
+- Tipos y errores del dominio (issue #5), en `solpus-core` sin tocar el SDK:
+  `Base58`, `Error` (validación, RPC y red), `Types` (`Address` de 32 bytes y
+  `Signature` de 64, abstractos), `Lamports` (conversión exacta con `Nano`,
+  aritmética comprobada, formato ASCII) y `Validate` (parsers totales con
+  límites de longitud). Suite `unit` con 40 pruebas (`tasty` + `hedgehog`), que
+  incluye un vector base58 independiente (`Hello World!`). `cabal test all`
+  corre en `pre-push` y en CI.
 
 ### Desviaciones respecto al plan (issue #2)
 - **Hooks nativos de Git en lugar de `lefthook`/`pre-commit`**: cero
@@ -95,9 +104,12 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 - El hook `pre-commit` comprueba los archivos del árbol de trabajo, no el
   contenido exacto del índice; CI es el control definitivo.
 
+### Desviaciones respecto al plan (issue #5)
+- Las suites de pruebas viven dentro de cada paquete (`solpus-core/test/`) y
+  no en un `test/` de la raíz: es la forma habitual de cabal.
+
 ### No hecho
 - Sin tarjeta de Trello (opcional en este proyecto).
-- Sin pruebas automatizadas (llegan con el issue #5).
 - Sin dependencia del SDK en los paquetes de producción (solo en el spike,
   fuera del repo); llega con los issues #6 y #7.
 
@@ -117,9 +129,9 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 5. Siguiente paso
 
-1. Revisar y mergear el PR del spike (issue #4), con autorización explícita.
+1. Revisar y mergear el PR del issue #5, con autorización explícita.
 2. Issue #3: actualizar y aceptar el ADR 0001 con la versión 1.4.0.0.
-3. Fase 1: issue #5 (tipos y errores del dominio, con las conclusiones del spike).
+3. Issue #6: interfaz `MonadSolana` e intérprete en memoria.
 
 ## 6. Archivos relevantes
 
