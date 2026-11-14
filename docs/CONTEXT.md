@@ -94,6 +94,9 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   límites de longitud). Suite `unit` con 40 pruebas (`tasty` + `hedgehog`), que
   incluye un vector base58 independiente (`Hello World!`). `cabal test all`
   corre en `pre-push` y en CI.
+- ADR 0001 (issue #3) revisado y aceptado con la evidencia del spike: SDK
+  1.4.0.0, capa baja con `preflightCommitment = confirmed`, errores como
+  excepciones traducidas a `SolpusError`, y confirmación por WebSocket.
 
 ### Desviaciones respecto al plan (issue #2)
 - **Hooks nativos de Git en lugar de `lefthook`/`pre-commit`**: cero
@@ -129,13 +132,14 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 5. Siguiente paso
 
-1. Revisar y mergear el PR del issue #5, con autorización explícita.
-2. Issue #3: actualizar y aceptar el ADR 0001 con la versión 1.4.0.0.
-3. Issue #6: interfaz `MonadSolana` e intérprete en memoria.
+1. Revisar y mergear el PR del issue #3 (ADR 0001), con autorización explícita.
+2. Issue #6: interfaz `MonadSolana` e intérprete en memoria.
+3. Issue #7: configuración y balance por RPC, con el SDK 1.4.0.0.
 
 ## 6. Archivos relevantes
 
 - `docs/PLAN.md` — versiones, arquitectura, fases e issues.
 - `docs/spikes/0001-sdk.md` — resultados del spike del SDK.
 - `docs/WORKFLOW.md` — flujo y reglas de Git.
-- `docs/adr/0001-frontera-con-el-sdk.md` — decisión sobre el SDK.
+- [`docs/adr/0001-frontera-con-el-sdk.md`](adr/0001-frontera-con-el-sdk.md) —
+  decisión sobre el SDK (aceptado, revisado tras el spike).
