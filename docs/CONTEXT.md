@@ -94,6 +94,18 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   límites de longitud). Suite `unit` con 40 pruebas (`tasty` + `hedgehog`), que
   incluye un vector base58 independiente (`Hello World!`). `cabal test all`
   corre en `pre-push` y en CI.
+- Interfaz `MonadSolana` e intérprete en memoria (issue #6), en
+  `solpus-client`: `Solpus.Client.Class` con `getBalance` y `submitTransfer`
+  (sin claves en la interfaz; quien firma lo resuelve la implementación real) y
+  `Solpus.Client.InMemory`, que imita lo observado en el spike (saldo 0 para
+  cuentas desconocidas, `RpcError -32002` sin fondos). Suite `unit` con 9
+  pruebas, incluidas dos propiedades (el total de lamports se conserva y una
+  transferencia fallida no toca el libro). Verificadas con pruebas de
+  mutación: romper el crédito o el libro tras un fallo hace fallar 6 y 3 de las 9.
+- `scripts/check-boundaries.sh`: comprueba las fronteras de dependencia (SDK
+  solo en `Rpc`/`Tx`, ninguna capa importa a otra superior, `solpus-app` solo
+  importa la interfaz, y en sus pruebas el intérprete en memoria). Probado en
+  positivo y con violaciones inyectadas; corre en CI y en `pre-push`.
 
 ### Desviaciones respecto al plan (issue #2)
 - **Hooks nativos de Git en lugar de `lefthook`/`pre-commit`**: cero
@@ -129,9 +141,9 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 5. Siguiente paso
 
-1. Revisar y mergear el PR del issue #5, con autorización explícita.
-2. Issue #3: actualizar y aceptar el ADR 0001 con la versión 1.4.0.0.
-3. Issue #6: interfaz `MonadSolana` e intérprete en memoria.
+1. Revisar y mergear el PR del issue #6, con autorización explícita.
+2. Issue #7: configuración y balance por RPC, con el SDK 1.4.0.0.
+3. Issue #8: gestión de wallet (P0, riesgo alto, dos pasadas de revisión).
 
 ## 6. Archivos relevantes
 

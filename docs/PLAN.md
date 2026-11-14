@@ -101,8 +101,12 @@ solpus-cli → solpus-app → solpus-client → solpus-core
 
 - `solpus-core` no importa nada fuera de `base`, `text` y `bytestring`.
 - Solo `Solpus.Client.Rpc` y `Solpus.Client.Tx` importan el SDK.
-- `solpus-app` solo conoce la clase `MonadSolana`, nunca la implementación.
+- `solpus-app` solo conoce la clase `MonadSolana`, nunca la implementación; en
+  sus pruebas puede usar además el intérprete en memoria.
 - La CLI no contiene lógica de negocio.
+- `scripts/check-boundaries.sh` comprueba estas reglas (por texto, sobre las
+  líneas `import`) en `pre-push` y en el job `lint` de CI. Los módulos de
+  `solpus-client` que `solpus-app` pueda usar se listan allí de forma explícita.
 
 ## 5. Herramientas
 
