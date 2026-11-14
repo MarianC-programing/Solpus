@@ -18,8 +18,8 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 3. Decisiones
 
-- Base: `solana-haskell-sdk` **1.3.0.0** sobre **GHC 9.6.7**, aislado en
-  `solpus-client` (ver ADR 0001).
+- Base: `solana-haskell-sdk` **1.4.0.0** sobre **GHC 9.6.7**, aislado en
+  `solpus-client` (ver ADR 0001 y `docs/spikes/0001-sdk.md`).
 - Monorepo cabal: `solpus-core`, `solpus-client`, `solpus-app`, `solpus-cli`.
 - Red de pruebas por defecto; mainnet bloqueado hasta decisión escrita.
 - Sin librería de logging en la primera versión.
@@ -38,8 +38,13 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 - `index-state` fijado en `2026-11-13T18:09:53Z`; las dependencias de boot
   quedan congeladas en `cabal.project.freeze` (`text` 2.0.2, `bytestring`
   0.11.5.4).
-- **1.4.0.0 del SDK existe pero no se pudo leer** (Hackage bloqueó la consulta).
-  No se adopta; se evalúa en el spike #4.
+- **SDK `solana-haskell-sdk` 1.4.0.0** (adoptada tras el spike #4, en lugar de
+  la 1.3.0.0 prevista): mismos límites de dependencias, mismo comportamiento y
+  correcciones relevantes. Detalle en `docs/spikes/0001-sdk.md`.
+- **Agave 4.4.1** (`solana-test-validator`), release oficial verificado por
+  SHA-256, instalado fuera del repo en `~/.local/share/solpus-spike/` sin tocar
+  `PATH` ni perfiles. Su RPC escucha en `0.0.0.0` y no se puede restringir:
+  usarlo solo mientras dure cada prueba.
 - `fourmolu` **0.21.0.0** y `hlint` **3.10**: binarios oficiales instalados en
   `.tools/bin` (ignorado por Git) con `sh scripts/install-tools.sh`. La suma de
   `fourmolu` coincide con el digest de GitHub; la de `hlint` se fijó en la
@@ -54,7 +59,7 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ### Hecho
 - Carpeta `Solpus/` creada (renombrada desde un nombre provisional).
-- `README.md`, `.gitignore`, `docs/PLAN.md` (v2), `docs/WORKFLOW.md` y
+- `README.md`, `.gitignore`, `docs/PLAN.md` (v3), `docs/WORKFLOW.md` y
   `docs/adr/0001-frontera-con-el-sdk.md`.
 - Plan **aprobado** por la persona responsable (2026-11-12).
 - Repositorio **privado** `MarianC-programing/Solpus` creado; `main` publicado
@@ -63,8 +68,10 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 - Etiquetas de tipo, área, prioridad, riesgo y estado.
 - Ajustes del repo: solo *squash merge*, rama borrada tras el merge.
 - Protección de `main`: PR obligatorio, historial lineal, sin force push ni
-  borrado, conversaciones resueltas, vigente también para administradores.
-  Sin checks obligatorios todavía (no existe CI; se añaden en el issue #2).
+  borrado, conversaciones resueltas, vigente también para administradores, y
+  checks obligatorios `build` y `lint` con rama actualizada (`strict`).
+  Verificado con un PR desechable (#18, cerrado): `lint` falló, `build` pasó y
+  el merge quedó bloqueado.
 - Plantillas de issue y PR, `.editorconfig`, `.gitattributes`, `CODEOWNERS`
   (issue #14).
 - Esqueleto del monorepo (issue #1): cuatro paquetes con módulos mínimos que
@@ -74,6 +81,10 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 - Calidad y CI (issue #2): `fourmolu.yaml`, `.hlint.yaml`, workflow de CI con
   jobs `build` y `lint`, hooks nativos en `.githooks/` y scripts de
   instalación. Código existente formateado con fourmolu; `hlint` sin hallazgos.
+- Spike #4 (`docs/spikes/0001-sdk.md`): el SDK funciona con GHC 9.6.7 y
+  Agave 4.4.1. Errores como excepciones (no `Left`), confirmación por
+  WebSocket en 0,14–0,39 s frente a 13–14 s de finalización, y 127 paquetes en
+  frío. Se adopta la 1.4.0.0.
 
 ### Desviaciones respecto al plan (issue #2)
 - **Hooks nativos de Git en lugar de `lefthook`/`pre-commit`**: cero
@@ -87,27 +98,32 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 ### No hecho
 - Sin tarjeta de Trello (opcional en este proyecto).
 - Sin pruebas automatizadas (llegan con el issue #5).
-- Checks obligatorios (`build`, `lint`) en la protección de `main`: se activan
-  cuando CI haya corrido en verde (parte del issue #2).
-- Sin dependencia del SDK ni acceso a red (issues #4 y #7).
+- Sin dependencia del SDK en los paquetes de producción (solo en el spike,
+  fuera del repo); llega con los issues #6 y #7.
 
 ### Notas de entorno
 - `ProyectosDev/` es a su vez un repositorio Git (sin commits ni remoto).
   `Solpus/` tiene su propio `.git`; no ejecutar comandos de Git desde el padre.
-- La clave SSH (`~/.ssh/id_ed25519`) está registrada en GitHub, pero tiene
-  passphrase y el shell del asistente no tiene `ssh-agent`, por lo que SSH
-  falla allí con `Permission denied`. El remoto usa HTTPS con el helper de `gh`
-  configurado solo en este repo (`credential.helper` local).
+- La clave SSH (`~/.ssh/id_ed25519`) está registrada en GitHub y tiene
+  passphrase. En la terminal de la persona responsable ya funciona (se creó
+  `~/.ssh/config` con `AddKeysToAgent yes`; `ssh -T git@github.com` saluda).
+  El shell del asistente no tiene `ssh-agent`, así que sigue sin poder usar SSH:
+  el remoto usa HTTPS con el helper de `gh` configurado solo en este repo
+  (`credential.helper` local).
+- `hlint` y `fourmolu` viven en `.tools/bin`; `ghc`/`cabal` en `~/.ghcup/bin`.
+  Ambos hay que añadirlos al `PATH` en cada shell.
+- Los scripts de `scripts/` y `.githooks/` son ejecutables solo porque están
+  marcados así en el índice de Git; el shell del asistente no permite `chmod`.
 
 ## 5. Siguiente paso
 
-1. Revisar y mergear el PR de calidad y CI (issue #2), con autorización explícita.
-2. Activar `build` y `lint` como checks obligatorios y demostrar con un PR
-   desechable que un código sin formato falla en CI.
-3. Spike #4 y fase 1.
+1. Revisar y mergear el PR del spike (issue #4), con autorización explícita.
+2. Issue #3: actualizar y aceptar el ADR 0001 con la versión 1.4.0.0.
+3. Fase 1: issue #5 (tipos y errores del dominio, con las conclusiones del spike).
 
 ## 6. Archivos relevantes
 
 - `docs/PLAN.md` — versiones, arquitectura, fases e issues.
+- `docs/spikes/0001-sdk.md` — resultados del spike del SDK.
 - `docs/WORKFLOW.md` — flujo y reglas de Git.
 - `docs/adr/0001-frontera-con-el-sdk.md` — decisión sobre el SDK.
