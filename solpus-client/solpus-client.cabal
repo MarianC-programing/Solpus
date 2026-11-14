@@ -10,9 +10,30 @@ common warnings
 
 library
   import:           warnings
-  exposed-modules:  Solpus.Client.Info
-  build-depends:    base         >=4.18 && <4.19
-                  , text         >=2.0  && <2.1
+  exposed-modules:  Solpus.Client.Class
+                    Solpus.Client.InMemory
+                    Solpus.Client.Info
+  build-depends:    base          >=4.18 && <4.19
+                  , bytestring    >=0.11 && <0.12
+                  , containers    >=0.6  && <0.7
+                  , text          >=2.0  && <2.1
+                  , transformers  >=0.6  && <0.7
                   , solpus-core
   hs-source-dirs:   src
   default-language: GHC2021
+
+test-suite unit
+  import:           warnings
+  type:             exitcode-stdio-1.0
+  main-is:          Main.hs
+  other-modules:    Test.InMemory
+  hs-source-dirs:   test
+  default-language: GHC2021
+  build-depends:    base            >=4.18 && <4.19
+                  , bytestring      >=0.11 && <0.12
+                  , hedgehog
+                  , solpus-client
+                  , solpus-core
+                  , tasty
+                  , tasty-hedgehog
+                  , tasty-hunit
