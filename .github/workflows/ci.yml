@@ -47,6 +47,9 @@ jobs:
       - name: Compilar sin advertencias
         run: cabal build all --ghc-options=-Werror
 
+      - name: Pruebas
+        run: cabal test all --ghc-options=-Werror --test-show-details=direct
+
   lint:
     name: lint
     runs-on: ubuntu-24.04

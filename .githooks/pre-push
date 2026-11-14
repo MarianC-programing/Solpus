@@ -1,6 +1,7 @@
 #!/usr/bin/env sh
-# pre-push: el proyecto debe compilar sin advertencias antes de publicar.
-# Las pruebas unitarias se añaden aquí cuando existan (issue #5).
+# pre-push: el proyecto debe compilar sin advertencias y pasar las pruebas
+# antes de publicar. Usa las mismas banderas en ambos comandos para que cabal
+# no recompile entre uno y otro.
 # No se omite con --no-verify.
 set -eu
 
@@ -14,3 +15,4 @@ command -v cabal >/dev/null 2>&1 || {
 
 cd "$root"
 cabal build all --ghc-options=-Werror
+cabal test all --ghc-options=-Werror
