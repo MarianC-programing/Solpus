@@ -1,8 +1,9 @@
 # PLAN — Solpus
 
-> Versión 2 · 2026-11-12 · Estado: **plan aprobado** por la persona responsable
+> Versión 3 · 2026-11-13 · Estado: **plan aprobado** por la persona responsable
 > (aprobación en la conversación del 2026-11-12). Las versiones y el nombre los
-> decidió Claude por delegación.
+> decidió Claude por delegación. La v3 incorpora el resultado del spike #4
+> (`docs/spikes/0001-sdk.md`): SDK 1.4.0.0.
 
 ## 1. Objetivo
 
@@ -21,7 +22,7 @@ terceros, interfaz web, indexador.
 | --- | --- | --- |
 | GHC | **9.6.7** | Verificado: es la versión con la que se probó el SDK |
 | `base` | `>=4.18 && <4.19` | Verificado: es el límite que impone el SDK |
-| `solana-haskell-sdk` | **1.3.0.0** (`==1.3.0.0`) | Verificado en Hackage |
+| `solana-haskell-sdk` | **1.4.0.0** (`==1.4.0.0`) | Verificado en el spike #4: compila y funciona con GHC 9.6.7; mismos límites que la 1.3.0.0 |
 | `web3`, `web3-provider` | `>=1.1 && <1.2` | Verificado: límites del SDK |
 | `aeson` | `>=2.2 && <2.3` | Verificado: límite del SDK |
 | `text` | `>=2.0 && <2.1` | Verificado: límite del SDK |
@@ -33,9 +34,9 @@ terceros, interfaz web, indexador.
 
 Notas:
 
-- **No se adopta 1.4.0.0 del SDK.** Hackage lista esa versión, pero no pude
-  leer sus límites (el sitio bloqueó la consulta). Se evaluará en el spike #4,
-  nunca durante la implementación.
+- **Se adopta la 1.4.0.0 del SDK** (decisión del spike #4, sustituye a la
+  1.3.0.0 prevista inicialmente): mismos límites, mismo comportamiento y
+  correcciones que afectan a los issues #8 y #11. Ver `docs/spikes/0001-sdk.md`.
 - Los números que dependen de GHC 9.6.7 (herramientas y librerías de pruebas)
   no se inventan aquí: se resuelven en el issue #1 y quedan congelados con
   `cabal.project.freeze` y un `index-state` fijo en `cabal.project`.
@@ -52,7 +53,7 @@ Notas:
 | D4 | Casos de uso sobre una clase (`MonadSolana`) | Las pruebas usan un intérprete en memoria |
 | D5 | Red por defecto: `solana-test-validator`, luego devnet | Sin riesgo económico; mainnet requiere decisión escrita |
 | D6 | Monorepo cabal con varios paquetes | El compilador impone las fronteras |
-| D7 | Errores como `Either SolpusError` en la API pública | El SDK lanza `JsonRpcException` desde `runWeb3'`; `solpus-client` los captura y los traduce, sin dejar pasar excepciones |
+| D7 | Errores como `Either SolpusError` en la API pública | El SDK lanza excepciones, no `Left` (spike #4): `JsonRpcException` (RPC), `HttpException` (red) y `ErrorCall` (direcciones inválidas por `IsString`). `solpus-client` las captura con `try` y las traduce; cualquier otra excepción se trata como defecto |
 | D8 | Claves privadas solo desde archivo con permisos restringidos o variable de entorno; nunca en logs | Seguridad |
 | D9 | Sin librería de logging en la primera versión; la CLI controla la salida | Menos dependencias y menos superficie de fuga de secretos |
 | D10 | La confirmación pasa por `awaitSignature` con transporte WebSocket que aportamos nosotros | El SDK es agnóstico del transporte; `wss://` se resuelve cambiando a `wuss` |
