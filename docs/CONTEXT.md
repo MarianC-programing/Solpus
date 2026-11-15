@@ -110,6 +110,9 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   solo en `Rpc`/`Tx`, ninguna capa importa a otra superior, `solpus-app` solo
   importa la interfaz, y en sus pruebas el intérprete en memoria). Probado en
   positivo y con violaciones inyectadas; corre en CI y en `pre-push`.
+- ADR 0001 (issue #3) revisado y aceptado con la evidencia del spike: SDK
+  1.4.0.0, capa baja con `preflightCommitment = confirmed`, errores como
+  excepciones traducidas a `SolpusError`, y confirmación por WebSocket.
 
 ### Desviaciones respecto al plan (issue #2)
 - **Hooks nativos de Git en lugar de `lefthook`/`pre-commit`**: cero
@@ -145,13 +148,16 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 5. Siguiente paso
 
-1. Revisar y mergear el PR del issue #6, con autorización explícita.
-2. Issue #7: configuración y balance por RPC, con el SDK 1.4.0.0.
-3. Issue #8: gestión de wallet (P0, riesgo alto, dos pasadas de revisión).
+1. Issue #7: configuración y lectura de saldo por RPC con el SDK 1.4.0.0. Es el
+   primer import del SDK; incluye una llamada propia a `getBalance` con
+   commitment (el del SDK no lo admite) y exige dos pasadas de revisión.
+2. Issue #8: gestión de wallet (P0, riesgo alto, dos pasadas de revisión).
+3. Issue #9: transferir SOL.
 
 ## 6. Archivos relevantes
 
 - `docs/PLAN.md` — versiones, arquitectura, fases e issues.
 - `docs/spikes/0001-sdk.md` — resultados del spike del SDK.
 - `docs/WORKFLOW.md` — flujo y reglas de Git.
-- `docs/adr/0001-frontera-con-el-sdk.md` — decisión sobre el SDK.
+- [`docs/adr/0001-frontera-con-el-sdk.md`](adr/0001-frontera-con-el-sdk.md) —
+  decisión sobre el SDK (aceptado, revisado tras el spike).
