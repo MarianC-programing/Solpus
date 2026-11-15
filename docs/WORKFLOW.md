@@ -32,14 +32,16 @@ autorización** para cualquier cambio externo o irreversible.
    ```bash
    sh scripts/install-tools.sh        # una vez: fourmolu y hlint fijados
    sh scripts/setup-hooks.sh          # una vez por clon: activa .githooks/
+   sh scripts/check-boundaries.sh
    cabal build all --ghc-options=-Werror
    cabal test all --ghc-options=-Werror
    .tools/bin/fourmolu --mode check $(git ls-files '*.hs')
    .tools/bin/hlint $(git ls-files '*.hs')
    ```
    Los hooks (`pre-commit`: formato y lint;
-   `pre-push`: build sin advertencias y `cabal test all`) y CI ejecutan lo
-   mismo. `cabal test integration` se añade cuando el cambio toque red.
+   `pre-push`: fronteras, build sin advertencias y `cabal test all`) y CI
+   ejecutan lo mismo. `cabal test integration` se añade cuando el cambio
+   toque red.
 6. **Revisión** independiente del diff. Riesgo medio o alto: dos pasadas
    (corrección y seguridad; mantenibilidad y arquitectura). Los hallazgos
    `P0` y `P1` bloquean.

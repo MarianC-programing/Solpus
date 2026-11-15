@@ -50,7 +50,7 @@ Notas:
 | D1 | Usar `solana-haskell-sdk` como base | Cubre claves, transacciones, RPC, WebSocket, System Program y SPL Token; declara pruebas contra vectores de los crates de Rust |
 | D2 | Aislarlo en un solo paquete (`solpus-client`) | Si el SDK cambia o falla, solo se reescribe una capa |
 | D3 | Dominio puro en `solpus-core` | Se prueba sin red ni mocks |
-| D4 | Casos de uso sobre una clase (`MonadSolana`) | Las pruebas usan un intérprete en memoria |
+| D4 | Casos de uso sobre dos clases por mínimo privilegio (`MonadSolanaRead` y `MonadSolana`) | Las pruebas usan un intérprete en memoria; una función de solo lectura no puede gastar dinero y lo hace cumplir el compilador |
 | D5 | Red por defecto: `solana-test-validator`, luego devnet | Sin riesgo económico; mainnet requiere decisión escrita |
 | D6 | Monorepo cabal con varios paquetes | El compilador impone las fronteras |
 | D7 | Errores como `Either SolpusError` en la API pública | El SDK lanza excepciones, no `Left` (spike #4): `JsonRpcException` (RPC), `HttpException` (red) y `ErrorCall` (direcciones inválidas por `IsString`). `solpus-client` las captura con `try` y las traduce; cualquier otra excepción se trata como defecto |
@@ -101,8 +101,12 @@ solpus-cli → solpus-app → solpus-client → solpus-core
 
 - `solpus-core` no importa nada fuera de `base`, `text` y `bytestring`.
 - Solo `Solpus.Client.Rpc` y `Solpus.Client.Tx` importan el SDK.
-- `solpus-app` solo conoce la clase `MonadSolana`, nunca la implementación.
+- `solpus-app` solo conoce la clase `MonadSolana`, nunca la implementación; en
+  sus pruebas puede usar además el intérprete en memoria.
 - La CLI no contiene lógica de negocio.
+- `scripts/check-boundaries.sh` comprueba estas reglas (por texto, sobre las
+  líneas `import`) en `pre-push` y en el job `lint` de CI. Los módulos de
+  `solpus-client` que `solpus-app` pueda usar se listan allí de forma explícita.
 
 ## 5. Herramientas
 

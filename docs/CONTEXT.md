@@ -94,6 +94,22 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   límites de longitud). Suite `unit` con 40 pruebas (`tasty` + `hedgehog`), que
   incluye un vector base58 independiente (`Hello World!`). `cabal test all`
   corre en `pre-push` y en CI.
+- Interfaz de `solpus-client` e intérprete en memoria (issue #6):
+  `Solpus.Client.Class` con **dos clases por mínimo privilegio**:
+  `MonadSolanaRead` (`getBalance`) y `MonadSolana` (`submitTransfer`, que
+  incluye la de lectura). Una función con restricción de solo lectura no puede
+  gastar dinero; GHC rechaza el intento (comprobado compilando un caso
+  negativo). La interfaz no lleva claves: quien firma lo resuelve la
+  implementación real. `Solpus.Client.InMemory` imita lo observado en el spike
+  (saldo 0 para cuentas desconocidas, `RpcError -32002` sin fondos). Suite
+  `unit` con 10 pruebas, tres de ellas propiedades (el total de lamports se
+  conserva, una transferencia fallida no toca el libro y una lectura nunca
+  modifica el libro). Con las 9 pruebas originales, romper el crédito o el libro
+  tras un fallo (pruebas de mutación) hizo fallar 6 y 3 de ellas.
+- `scripts/check-boundaries.sh`: comprueba las fronteras de dependencia (SDK
+  solo en `Rpc`/`Tx`, ninguna capa importa a otra superior, `solpus-app` solo
+  importa la interfaz, y en sus pruebas el intérprete en memoria). Probado en
+  positivo y con violaciones inyectadas; corre en CI y en `pre-push`.
 - ADR 0001 (issue #3) revisado y aceptado con la evidencia del spike: SDK
   1.4.0.0, capa baja con `preflightCommitment = confirmed`, errores como
   excepciones traducidas a `SolpusError`, y confirmación por WebSocket.
@@ -132,9 +148,11 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 5. Siguiente paso
 
-1. Revisar y mergear el PR del issue #3 (ADR 0001), con autorización explícita.
-2. Issue #6: interfaz `MonadSolana` e intérprete en memoria.
-3. Issue #7: configuración y balance por RPC, con el SDK 1.4.0.0.
+1. Issue #7: configuración y lectura de saldo por RPC con el SDK 1.4.0.0. Es el
+   primer import del SDK; incluye una llamada propia a `getBalance` con
+   commitment (el del SDK no lo admite) y exige dos pasadas de revisión.
+2. Issue #8: gestión de wallet (P0, riesgo alto, dos pasadas de revisión).
+3. Issue #9: transferir SOL.
 
 ## 6. Archivos relevantes
 

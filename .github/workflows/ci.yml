@@ -62,6 +62,9 @@ jobs:
       - name: Instalar fourmolu y hlint (versiones y sumas fijadas)
         run: sh scripts/install-tools.sh
 
+      - name: Fronteras de dependencia
+        run: sh scripts/check-boundaries.sh
+
       - name: Formato (fourmolu)
         run: .tools/bin/fourmolu --mode check $(git ls-files '*.hs')
 
