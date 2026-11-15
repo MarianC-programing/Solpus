@@ -7,7 +7,7 @@ import Data.Word (Word8)
 import Hedgehog (Gen, annotateShow, forAll, property, (===))
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
-import Solpus.Client.Class (MonadSolana (..), Transfer (..))
+import Solpus.Client.Class (MonadSolana (..), MonadSolanaRead (..), Transfer (..))
 import Solpus.Client.InMemory
 import Solpus.Core.Error (SolpusError (..), ValidationError (..))
 import Solpus.Core.Lamports (Lamports (..))
@@ -80,6 +80,10 @@ tests =
             (result, after) = runInMemory ledger (submitTransfer (Transfer alice bob (Lamports 1)))
         result @?= Left (ValidationFailed AmountOverflow)
         after @?= ledger
+    , testProperty "una lectura nunca modifica el libro" $ property $ do
+        ledger <- forAll genLedger
+        address <- forAll genAddress
+        snd (runInMemory ledger (getBalance address)) === ledger
     , testProperty "una transferencia conserva el total y, si falla, no toca el libro" $ property $ do
         ledger <- forAll genLedger
         transfer <- forAll genTransfer

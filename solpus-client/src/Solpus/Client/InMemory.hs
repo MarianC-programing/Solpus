@@ -29,7 +29,7 @@ import Data.Functor (($>))
 import Data.Map.Strict (Map)
 import Data.Map.Strict qualified as Map
 import Data.Word (Word64)
-import Solpus.Client.Class (MonadSolana (..), Transfer (..))
+import Solpus.Client.Class (MonadSolana (..), MonadSolanaRead (..), Transfer (..))
 import Solpus.Core.Error (SolpusError (..))
 import Solpus.Core.Lamports (Lamports (..), addLamports, subLamports)
 import Solpus.Core.Types (Address, Signature, signatureFromBytes)
@@ -67,9 +67,10 @@ newtype InMemory a = InMemory (State Ledger a)
 runInMemory :: Ledger -> InMemory a -> (a, Ledger)
 runInMemory ledger (InMemory action) = runState action ledger
 
-instance MonadSolana InMemory where
+instance MonadSolanaRead InMemory where
   getBalance address = InMemory (Right . ledgerBalance address <$> get)
 
+instance MonadSolana InMemory where
   submitTransfer transfer = InMemory $ do
     ledger <- get
     case applyTransfer transfer ledger of

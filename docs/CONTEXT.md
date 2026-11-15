@@ -94,14 +94,18 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   límites de longitud). Suite `unit` con 40 pruebas (`tasty` + `hedgehog`), que
   incluye un vector base58 independiente (`Hello World!`). `cabal test all`
   corre en `pre-push` y en CI.
-- Interfaz `MonadSolana` e intérprete en memoria (issue #6), en
-  `solpus-client`: `Solpus.Client.Class` con `getBalance` y `submitTransfer`
-  (sin claves en la interfaz; quien firma lo resuelve la implementación real) y
-  `Solpus.Client.InMemory`, que imita lo observado en el spike (saldo 0 para
-  cuentas desconocidas, `RpcError -32002` sin fondos). Suite `unit` con 9
-  pruebas, incluidas dos propiedades (el total de lamports se conserva y una
-  transferencia fallida no toca el libro). Verificadas con pruebas de
-  mutación: romper el crédito o el libro tras un fallo hace fallar 6 y 3 de las 9.
+- Interfaz de `solpus-client` e intérprete en memoria (issue #6):
+  `Solpus.Client.Class` con **dos clases por mínimo privilegio**:
+  `MonadSolanaRead` (`getBalance`) y `MonadSolana` (`submitTransfer`, que
+  incluye la de lectura). Una función con restricción de solo lectura no puede
+  gastar dinero; GHC rechaza el intento (comprobado compilando un caso
+  negativo). La interfaz no lleva claves: quien firma lo resuelve la
+  implementación real. `Solpus.Client.InMemory` imita lo observado en el spike
+  (saldo 0 para cuentas desconocidas, `RpcError -32002` sin fondos). Suite
+  `unit` con 10 pruebas, tres de ellas propiedades (el total de lamports se
+  conserva, una transferencia fallida no toca el libro y una lectura nunca
+  modifica el libro). Con las 9 pruebas originales, romper el crédito o el libro
+  tras un fallo (pruebas de mutación) hizo fallar 6 y 3 de ellas.
 - `scripts/check-boundaries.sh`: comprueba las fronteras de dependencia (SDK
   solo en `Rpc`/`Tx`, ninguna capa importa a otra superior, `solpus-app` solo
   importa la interfaz, y en sus pruebas el intérprete en memoria). Probado en
