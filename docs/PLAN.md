@@ -57,6 +57,7 @@ Notas:
 | D8 | Claves privadas solo desde archivo con permisos restringidos o variable de entorno; nunca en logs | Seguridad |
 | D9 | Sin librería de logging en la primera versión; la CLI controla la salida | Menos dependencias y menos superficie de fuga de secretos |
 | D10 | La confirmación pasa por `awaitSignature` con transporte WebSocket que aportamos nosotros | El SDK es agnóstico del transporte; `wss://` se resuelve cambiando a `wuss` |
+| D11 | Las lecturas usan commitment propio (`getBalance` con llamada propia) y las URLs de nodo se tratan como secreto | El `getBalance` del SDK no admite commitment y lee a `finalized` (saldo 0 tras un airdrop confirmado); las URLs suelen llevar claves de API |
 
 ## 4. Arquitectura
 

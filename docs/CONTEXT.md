@@ -1,6 +1,6 @@
 # Solpus — Contexto y estado de la sesión
 
-> Última actualización: 2026-11-13 · Sesión 1
+> Última actualización: 2026-11-17 · Sesión 2
 > Leer este archivo antes de continuar (regla 1 del `CLAUDE.md` general).
 
 ## 1. Qué es el proyecto
@@ -114,6 +114,21 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   1.4.0.0, capa baja con `preflightCommitment = confirmed`, errores como
   excepciones traducidas a `SolpusError`, y confirmación por WebSocket.
 
+- Configuración y lectura de saldo por RPC (issue #7, en revisión), primer
+  import del SDK 1.4.0.0, aislado en `Solpus.Client.Rpc`. `Config`: `Endpoint`
+  abstracto (solo http/https; http solo a localhost; rechaza credenciales en la
+  URL; su `Show` oculta ruta y consulta), `Commitment` por defecto `Confirmed`
+  y timeout de respuesta de 1 a 300 s. `Rpc`: `getBalance` con llamada propia
+  que admite commitment, porque el del SDK lee a `finalized` (demostrado en
+  integración: 0 frente a 2 SOL justo tras confirmar un airdrop). Las
+  excepciones del SDK se traducen a `SolpusError` sin incluir la URL. Decisión
+  D11 y ADR 0001 (8–9). Pruebas: 40 de `solpus-core` y 32 de `solpus-client:unit`
+  (incluye paridad con el SDK, 20.000 casos) y 3 de integración local con
+  `solana-test-validator`, que no corren en CI.
+  Limitaciones: sin prueba unitaria de `StatusCodeException`; la ruta
+  `RpcError` en vivo no se provocó; devnet sin comprobar a mano; el timeout de
+  conexión lo fija el SO.
+
 ### Desviaciones respecto al plan (issue #2)
 - **Hooks nativos de Git en lugar de `lefthook`/`pre-commit`**: cero
   dependencias nuevas (ni Go ni Python). Se activan con
@@ -148,9 +163,9 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 5. Siguiente paso
 
-1. Issue #7: configuración y lectura de saldo por RPC con el SDK 1.4.0.0. Es el
-   primer import del SDK; incluye una llamada propia a `getBalance` con
-   commitment (el del SDK no lo admite) y exige dos pasadas de revisión.
+1. Cerrar el issue #7: commits atómicos, push y PR (con autorización), dos
+   pasadas de revisión y CI (la primera compilación en frío es larga; el
+   timeout del job `build` sube a 60 min).
 2. Issue #8: gestión de wallet (P0, riesgo alto, dos pasadas de revisión).
 3. Issue #9: transferir SOL.
 

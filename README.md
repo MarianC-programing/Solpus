@@ -53,6 +53,10 @@ GHC 9.6.7 y cabal (por ejemplo con [`ghcup`](https://www.haskell.org/ghcup/)).
 cabal build all
 cabal test all
 cabal run solpus-cli
+
+# Integración contra un validador local (no corre en CI)
+SOLANA_INTEGRATION=1 SOLANA_TEST_VALIDATOR=<ruta>/solana-test-validator \
+  cabal test solpus-client:test:integration --test-show-details=direct
 ```
 
 Los subcomandos de la CLI llegan en fases posteriores (ver

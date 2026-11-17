@@ -35,6 +35,12 @@ grande de dependencias (127 paquetes en una compilación en frío, incluidos
    `mkPublicKeyFromString` del SDK (issue #7).
 7. La confirmación usa `awaitSignature` por WebSocket en `confirmed` por
    defecto (0,14–0,39 s en el spike, frente a 13–14 s de finalización).
+8. Las lecturas llevan commitment propio: `getBalance` se invoca con una
+   llamada propia (`remote "getBalance"` con `ConfigurationObject`), porque el
+   del SDK no admite commitment y lee a `finalized` (issue #7).
+9. La URL del nodo se trata como secreto: nunca aparece en errores ni logs, y
+   el `Show` de `Endpoint` oculta ruta y consulta. Los errores de red usan un
+   texto fijo sin la petición (issue #7).
 
 ## Consecuencias
 
