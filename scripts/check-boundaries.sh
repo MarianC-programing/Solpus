@@ -7,7 +7,9 @@
 #
 # Reglas:
 #   1. El SDK (Network.Solana, Network.Web3, Network.JsonRpc) solo puede
-#      importarse en solpus-client/src/Solpus/Client/{Rpc,Tx}.hs.
+#      importarse en solpus-client/src/Solpus/Client/{Rpc,Tx}.hs y en las
+#      pruebas de solpus-client (test/ y test-integration/), para fabricar
+#      excepciones, contrastar parsers y hablar con un validador real.
 #   2. Una capa no importa a otra superior.
 #   3. solpus-app solo puede importar de Solpus.Client los módulos de la lista
 #      PERMITIDOS_APP (la interfaz). Ninguna implementación. Sus pruebas pueden
@@ -42,7 +44,7 @@ imports_en() {
 # 1. El SDK solo entra por Rpc.hs y Tx.hs.
 sdk=$(imports_en . \
   | grep -E '^[^:]+:[0-9]+:import[[:space:]]+(qualified[[:space:]]+)?Network\.(Solana|Web3|JsonRpc)' \
-  | grep -vE '^\./solpus-client/src/Solpus/Client/(Rpc|Tx)\.hs:' || true)
+  | grep -vE '^\./solpus-client/(src/Solpus/Client/(Rpc|Tx)\.hs|test/[^:]*\.hs|test-integration/[^:]*\.hs):' || true)
 [ -z "$sdk" ] || fallo "el SDK se importa fuera de Rpc.hs/Tx.hs:
 $sdk"
 

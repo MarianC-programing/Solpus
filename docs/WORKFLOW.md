@@ -41,7 +41,12 @@ autorización** para cualquier cambio externo o irreversible.
    Los hooks (`pre-commit`: formato y lint;
    `pre-push`: fronteras, build sin advertencias y `cabal test all`) y CI
    ejecutan lo mismo. `cabal test integration` se añade cuando el cambio
-   toque red.
+   toque red. La integración no corre en CI; se ejecuta en local (arranca y
+   detiene su propio validador en los puertos 8899/8900):
+   ```bash
+   SOLANA_INTEGRATION=1 SOLANA_TEST_VALIDATOR=<ruta>/solana-test-validator \
+     cabal test solpus-client:test:integration --test-show-details=direct
+   ```
 6. **Revisión** independiente del diff. Riesgo medio o alto: dos pasadas
    (corrección y seguridad; mantenibilidad y arquitectura). Los hallazgos
    `P0` y `P1` bloquean.
