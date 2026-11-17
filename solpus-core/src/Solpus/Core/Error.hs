@@ -4,6 +4,7 @@
 module Solpus.Core.Error
   ( SolpusError (..)
   , ValidationError (..)
+  , WalletError (..)
   ) where
 
 import Data.Text (Text)
@@ -35,10 +36,36 @@ data ValidationError
     InvalidTimeout {minSeconds :: !Int, maxSeconds :: !Int}
   deriving (Eq, Show)
 
+{- | Fallo al cargar la clave de firma. Ningún constructor lleva datos: ni la
+clave, ni su contenido, ni la ruta ni el texto de la variable de entorno.
+-}
+data WalletError
+  = -- | El archivo no existe.
+    WalletFileNotFound
+  | -- | El archivo existe pero no se pudo abrir o leer.
+    WalletUnreadable
+  | -- | No es un archivo regular (directorio, dispositivo o enlace simbólico).
+    WalletNotRegularFile
+  | -- | Tiene permisos de grupo u otros; solo se admite 0600 o más estricto.
+    WalletInsecurePermissions
+  | -- | No pertenece al usuario que ejecuta el proceso.
+    WalletWrongOwner
+  | -- | Supera el tamaño máximo permitido.
+    WalletFileTooLarge
+  | -- | La variable de entorno no está definida.
+    WalletEnvNotSet
+  | -- | El contenido no es un arreglo JSON de 64 bytes.
+    WalletInvalidFormat
+  | -- | La mitad pública no corresponde a la semilla.
+    WalletKeyMismatch
+  deriving (Eq, Show)
+
 -- | Error de la API pública de Solpus.
 data SolpusError
   = -- | Entrada inválida, detectada antes de enviar nada.
     ValidationFailed !ValidationError
+  | -- | No se pudo cargar la clave de firma.
+    WalletFailed !WalletError
   | -- | El nodo respondió con un error JSON-RPC.
     RpcError {rpcCode :: !Int, rpcMessage :: !Text}
   | {- | No se pudo hablar con el nodo. El texto es una descripción fija del
