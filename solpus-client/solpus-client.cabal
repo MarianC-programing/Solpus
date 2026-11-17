@@ -11,13 +11,21 @@ common warnings
 library
   import:           warnings
   exposed-modules:  Solpus.Client.Class
+                    Solpus.Client.Config
                     Solpus.Client.InMemory
                     Solpus.Client.Info
-  build-depends:    base          >=4.18 && <4.19
-                  , bytestring    >=0.11 && <0.12
-                  , containers    >=0.6  && <0.7
-                  , text          >=2.0  && <2.1
-                  , transformers  >=0.6  && <0.7
+                    Solpus.Client.Rpc
+  build-depends:    base                >=4.18 && <4.19
+                  , bytestring          >=0.11 && <0.12
+                  , containers          >=0.6  && <0.7
+                  , http-client
+                  , http-client-tls
+                  , http-types
+                  , jsonrpc-tinyclient  >=1.1  && <1.2
+                  , solana-haskell-sdk  ==1.4.0.0
+                  , text                >=2.0  && <2.1
+                  , transformers        >=0.6  && <0.7
+                  , web3-provider       >=1.1  && <1.2
                   , solpus-core
   hs-source-dirs:   src
   default-language: GHC2021
@@ -26,14 +34,42 @@ test-suite unit
   import:           warnings
   type:             exitcode-stdio-1.0
   main-is:          Main.hs
-  other-modules:    Test.InMemory
+  other-modules:    Test.Config
+                    Test.InMemory
+                    Test.Rpc
   hs-source-dirs:   test
   default-language: GHC2021
-  build-depends:    base            >=4.18 && <4.19
-                  , bytestring      >=0.11 && <0.12
+  build-depends:    base                >=4.18 && <4.19
+                  , bytestring          >=0.11 && <0.12
                   , hedgehog
+                  , http-client
+                  , jsonrpc-tinyclient  >=1.1  && <1.2
+                  , solana-haskell-sdk  ==1.4.0.0
                   , solpus-client
                   , solpus-core
                   , tasty
                   , tasty-hedgehog
                   , tasty-hunit
+                  , text                >=2.0  && <2.1
+                  , web3-provider       >=1.1  && <1.2
+
+-- Contra solana-test-validator; se omite salvo con SOLANA_INTEGRATION=1.
+test-suite integration
+  import:           warnings
+  type:             exitcode-stdio-1.0
+  main-is:          Main.hs
+  hs-source-dirs:   test-integration
+  default-language: GHC2021
+  build-depends:    base                >=4.18 && <4.19
+                  , directory
+                  , filepath
+                  , process
+                  , solana-haskell-sdk  ==1.4.0.0
+                  , solpus-client
+                  , solpus-core
+                  , tasty
+                  , tasty-hunit
+                  , text                >=2.0  && <2.1
+                  , time
+                  , web3-provider       >=1.1  && <1.2
+                  , websockets
