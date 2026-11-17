@@ -26,6 +26,13 @@ data ValidationError
     AmountOverflow
   | -- | Resta que dejaría el saldo por debajo de cero.
     InsufficientLamports
+  | {- | Endpoint que no es una URL http(s) válida, que lleva credenciales
+    (@usuario:clave@) o que usa http fuera de localhost. No se guarda el texto
+    recibido: puede contener una clave de API.
+    -}
+    InvalidEndpoint
+  | -- | Timeout fuera del rango permitido, en segundos.
+    InvalidTimeout {minSeconds :: !Int, maxSeconds :: !Int}
   deriving (Eq, Show)
 
 -- | Error de la API pública de Solpus.
@@ -34,6 +41,14 @@ data SolpusError
     ValidationFailed !ValidationError
   | -- | El nodo respondió con un error JSON-RPC.
     RpcError {rpcCode :: !Int, rpcMessage :: !Text}
-  | -- | No se pudo hablar con el nodo.
+  | {- | No se pudo hablar con el nodo. El texto es una descripción fija del
+    fallo: nunca incluye la URL, que puede llevar una clave de API.
+    -}
     NetworkFailure !Text
+  | -- | El nodo respondió algo que Solpus no sabe interpretar.
+    InvalidResponse !Text
+  | {- | Defecto de Solpus, por ejemplo una incoherencia con el SDK. No es un
+    error del usuario ni de la red.
+    -}
+    InternalError !Text
   deriving (Eq, Show)
