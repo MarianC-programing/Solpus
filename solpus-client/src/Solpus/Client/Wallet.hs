@@ -146,8 +146,8 @@ buildWallet text = case parseKeyBytes text of
     _ -> Left (WalletFailed WalletKeyMismatch)
 
 {- | Lee un arreglo JSON de exactamente 64 enteros entre 0 y 255. Es total,
-no conserva el texto en ningún error y no admite nada más que espacios fuera
-del arreglo.
+no conserva el texto en ningún error, rechaza ceros a la izquierda (como JSON)
+y no admite nada más que espacios fuera del arreglo.
 -}
 parseKeyBytes :: ByteString -> Maybe ByteString
 parseKeyBytes input = do
@@ -169,6 +169,7 @@ parseKeyBytes input = do
   isSpace' c = c `elem` (" \t\r\n" :: String)
   byteValue digits
     | BS.null digits || BS.length digits > 3 = Nothing
+    | BS.length digits > 1 && BC.head digits == '0' = Nothing -- JSON no admite ceros a la izquierda
     | otherwise =
         let n = BC.foldl' (\acc c -> acc * 10 + fromEnum c - fromEnum '0') 0 digits
          in if n <= 255 then Just (fromIntegral n) else Nothing

@@ -149,6 +149,7 @@ formatTests =
                 , "[" <> intercalate "," (replicate 63 "1" <> ["-1"]) <> "]"
                 , "[" <> intercalate "," (replicate 63 "1" <> ["1.5"]) <> "]"
                 , validJson <> " basura"
+                , "[" <> intercalate "," (replicate 63 "1" <> ["007"]) <> "]"
                 ]
           mapM_ (\text -> writeKey path text >> loadWalletFile path >>= expectError WalletInvalidFormat) bad
     , testCase "una mitad pública que no corresponde da WalletKeyMismatch" $
