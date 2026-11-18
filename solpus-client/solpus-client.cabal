@@ -15,6 +15,7 @@ library
                     Solpus.Client.InMemory
                     Solpus.Client.Info
                     Solpus.Client.Rpc
+                    Solpus.Client.Wallet
   build-depends:    base                >=4.18 && <4.19
                   , bytestring          >=0.11 && <0.12
                   , containers          >=0.6  && <0.7
@@ -25,6 +26,7 @@ library
                   , solana-haskell-sdk  ==1.4.0.0
                   , text                >=2.0  && <2.1
                   , transformers        >=0.6  && <0.7
+                  , unix                >=2.8  && <2.9
                   , web3-provider       >=1.1  && <1.2
                   , solpus-core
   hs-source-dirs:   src
@@ -37,10 +39,13 @@ test-suite unit
   other-modules:    Test.Config
                     Test.InMemory
                     Test.Rpc
+                    Test.Wallet
   hs-source-dirs:   test
   default-language: GHC2021
   build-depends:    base                >=4.18 && <4.19
                   , bytestring          >=0.11 && <0.12
+                  , directory
+                  , filepath
                   , hedgehog
                   , http-client
                   , jsonrpc-tinyclient  >=1.1  && <1.2
@@ -51,6 +56,7 @@ test-suite unit
                   , tasty-hedgehog
                   , tasty-hunit
                   , text                >=2.0  && <2.1
+                  , unix                >=2.8  && <2.9
                   , web3-provider       >=1.1  && <1.2
 
 -- Contra solana-test-validator; se omite salvo con SOLANA_INTEGRATION=1.
