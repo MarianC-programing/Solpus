@@ -1,6 +1,6 @@
 # Solpus — Contexto y estado de la sesión
 
-> Última actualización: 2026-11-17 · Sesión 2
+> Última actualización: 2026-11-17 · Sesión 3
 > Leer este archivo antes de continuar (regla 1 del `CLAUDE.md` general).
 
 ## 1. Qué es el proyecto
@@ -114,7 +114,7 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   1.4.0.0, capa baja con `preflightCommitment = confirmed`, errores como
   excepciones traducidas a `SolpusError`, y confirmación por WebSocket.
 
-- Configuración y lectura de saldo por RPC (issue #7, en revisión), primer
+- Configuración y lectura de saldo por RPC (issue #7, PR #23, mergeado), primer
   import del SDK 1.4.0.0, aislado en `Solpus.Client.Rpc`. `Config`: `Endpoint`
   abstracto (solo http/https; http solo a localhost; rechaza credenciales en la
   URL; su `Show` oculta ruta y consulta), `Commitment` por defecto `Confirmed`
@@ -128,6 +128,22 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   Limitaciones: sin prueba unitaria de `StatusCodeException`; la ruta
   `RpcError` en vivo no se provocó; devnet sin comprobar a mano; el timeout de
   conexión lo fija el SO.
+- Gestión de wallet (issue #8, en revisión). `Solpus.Client.Wallet` (tercer
+  módulo que importa el SDK; `check-boundaries.sh` lo admite): `Wallet` abstracto,
+  sin `Eq` y con `Show` que solo enseña la dirección (el del SDK imprime la
+  clave). `loadWalletFile` abre sin seguir enlaces simbólicos y comprueba sobre
+  el descriptor abierto: archivo regular, dueño, permisos 0600 o más estrictos
+  (cualquier bit de grupo, otros o ejecución es error) y tamaño ≤ 1 KiB.
+  `loadWalletEnv` acepta el mismo arreglo JSON de 64 bytes. Parser propio,
+  total, sin dependencia nueva de JSON. Errores en `WalletError` (9
+  constructores sin datos: ni clave, ni contenido, ni ruta). Pruebas: 15 nuevas
+  (47 en `solpus-client:unit`), con clave centinela en todas las rutas de
+  error y 2 propiedades del parser. Mutaciones detectadas: `Show` que expone la
+  clave, permisos sin chequear y seguimiento de enlaces simbólicos. Sobrevive
+  la omisión del chequeo de dueño: no se puede probar sin root (`chown`).
+  Limitaciones: solo POSIX; sin protección frente a volcados de memoria ni a
+  otros procesos del mismo usuario; el entorno es más débil que el archivo.
+  El acceso a la clave para firmar llega con el #9.
 
 ### Desviaciones respecto al plan (issue #2)
 - **Hooks nativos de Git en lugar de `lefthook`/`pre-commit`**: cero
@@ -163,11 +179,11 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 5. Siguiente paso
 
-1. Cerrar el issue #7: commits atómicos, push y PR (con autorización), dos
-   pasadas de revisión y CI (la primera compilación en frío es larga; el
-   timeout del job `build` sube a 60 min).
-2. Issue #8: gestión de wallet (P0, riesgo alto, dos pasadas de revisión).
-3. Issue #9: transferir SOL.
+1. Cerrar el issue #8 (PR en revisión; dos pasadas, CI y merge con
+   autorización).
+2. Issue #9: transferir SOL (añade a `Wallet` el acceso mínimo para firmar).
+3. Seguimiento de #7 (tres P3, aún sin issue): acotar el mensaje de `RpcError`,
+   revisar excepciones relanzadas y verificar redirecciones HTTP.
 
 ## 6. Archivos relevantes
 
