@@ -54,8 +54,9 @@ cabal build all
 cabal test all
 cabal run solpus-cli
 
-# Integración contra un validador local (no corre en CI)
-SOLANA_INTEGRATION=1 SOLANA_TEST_VALIDATOR=<ruta>/solana-test-validator \
+# Integración contra un validador local (también corre en CI, job `integration`)
+sh scripts/install-validator.sh
+SOLANA_INTEGRATION=1 SOLANA_TEST_VALIDATOR=$PWD/.tools/agave/bin/solana-test-validator \
   cabal test solpus-client:test:integration --test-show-details=direct
 ```
 
