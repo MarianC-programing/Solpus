@@ -24,6 +24,7 @@ y 255 (semilla de 32 bytes más clave pública de 32). Solo POSIX.
 module Solpus.Client.Wallet
   ( Wallet
   , walletAddress
+  , signInstructions
   , loadWalletFile
   , loadWalletEnv
   , parseKeyBytes
@@ -38,9 +39,17 @@ import Data.ByteString.Char8 qualified as BC
 import Data.Char (isAscii, isDigit)
 import Foreign.C.Error (Errno (..), eLOOP)
 import GHC.IO.Exception (IOException (ioe_errno))
-import Network.Solana.Core.Crypto (SolanaPrivateKey, mkPrivateKeyFromBytes)
+import Network.Solana.Core.Block (BlockHash)
+import Network.Solana.Core.Crypto
+  ( SolanaPrivateKey
+  , fromBase64String
+  , mkPrivateKeyFromBytes
+  , toSolanaPublicKey
+  )
+import Network.Solana.Core.Instruction (Instruction)
+import Network.Solana.Core.Message (newTransactionIntentWithPayer)
 import Solpus.Core.Error (SolpusError (..), WalletError (..))
-import Solpus.Core.Types (Address, addressFromBytes)
+import Solpus.Core.Types (Address, Signature, addressFromBytes, signatureFromBytes)
 import System.Environment (lookupEnv)
 import System.IO (hClose)
 import System.IO.Error (isDoesNotExistError)
@@ -63,8 +72,9 @@ import System.Posix.IO
 import System.Posix.Types (UserID)
 import System.Posix.User (getEffectiveUserID)
 
-{- | Clave de firma cargada y su dirección pública. La clave no se expone: el
-issue #9 añadirá el acceso mínimo que necesita @Tx@ para firmar.
+{- | Clave de firma cargada y su dirección pública. La clave no se expone: lo
+único que sale de este módulo es una transacción ya firmada
+('signInstructions').
 -}
 data Wallet = Wallet !SolanaPrivateKey !Address
 
@@ -75,6 +85,23 @@ instance Show Wallet where
 -- | Dirección pública de la wallet.
 walletAddress :: Wallet -> Address
 walletAddress (Wallet _ address) = address
+
+{- | Firma una transacción cuyo pagador es la wallet. Devuelve la transacción
+serializada en base64, lista para @sendTransaction@, y su firma: la firma de
+una transacción se conoce antes de enviarla, y es lo que permite consultar su
+estado si el envío resulta incierto. Es la única vía por la que la clave se
+usa fuera de la carga; nunca sale de este módulo.
+-}
+signInstructions :: Wallet -> BlockHash -> [Instruction] -> Either SolpusError (String, Signature)
+signInstructions (Wallet key _) blockhash instructions =
+  case newTransactionIntentWithPayer (toSolanaPublicKey key) [key] instructions blockhash of
+    Left _ -> Left (InternalError "no se pudo compilar la transacción")
+    Right payload ->
+      -- Formato de red: contador compacto (1 byte con una sola firma) y la firma.
+      let raw = fromBase64String payload
+       in case signatureFromBytes (BS.take 64 (BS.drop 1 raw)) of
+            Right signature | BS.length raw > 65 -> Right (payload, signature)
+            _ -> Left (InternalError "la transacción firmada no tiene el formato esperado")
 
 -- | Tamaño máximo del archivo de clave, en bytes (un keypair ocupa ~230).
 maxKeyFileBytes :: Int

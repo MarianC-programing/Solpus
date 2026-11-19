@@ -78,7 +78,7 @@ endpointTests =
           Left e -> fail (show e)
           Right endpoint -> do
             (T.unpack secret `isInfixOf` show endpoint) === False
-            (T.unpack secret `isInfixOf` show (Config endpoint Confirmed 5)) === False
+            (T.unpack secret `isInfixOf` show (Config endpoint Confirmed 5 False)) === False
             endpointText endpoint === url
     ]
 

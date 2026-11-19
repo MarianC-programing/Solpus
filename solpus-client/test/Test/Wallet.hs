@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Test.Wallet (tests) where
+module Test.Wallet (tests, withTestWallet) where
 
 import Control.Exception (bracket)
 import Data.ByteString (ByteString)
@@ -47,6 +47,13 @@ sentinels =
   , toBase58String (BS.take 32 secretBytes)
   , intercalate "," (map show (BS.unpack (BS.take 8 secretBytes)))
   ]
+
+-- | Ejecuta una acción con una wallet cargada desde un archivo temporal válido.
+withTestWallet :: (Wallet -> IO a) -> IO a
+withTestWallet action = withTempDir $ \dir -> do
+  let path = dir </> "id.json"
+  writeKey path validJson
+  loadWalletFile path >>= either (assertFailure . show) action
 
 withTempDir :: (FilePath -> IO a) -> IO a
 withTempDir = bracket (mkdtemp "/tmp/solpus-wallet-") removeDirectoryRecursive

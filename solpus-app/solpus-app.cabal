@@ -11,8 +11,24 @@ common warnings
 library
   import:           warnings
   exposed-modules:  Solpus.App.Info
+                    Solpus.App.Transfer
   build-depends:    base           >=4.18 && <4.19
                   , text           >=2.0  && <2.1
                   , solpus-client
+                  , solpus-core
   hs-source-dirs:   src
   default-language: GHC2021
+
+test-suite unit
+  import:           warnings
+  type:             exitcode-stdio-1.0
+  main-is:          Main.hs
+  hs-source-dirs:   test
+  default-language: GHC2021
+  build-depends:    base           >=4.18 && <4.19
+                  , bytestring     >=0.11 && <0.12
+                  , solpus-app
+                  , solpus-client
+                  , solpus-core
+                  , tasty
+                  , tasty-hunit

@@ -137,6 +137,11 @@ data Config = Config
   -- ^ Nivel de commitment de las lecturas. Por defecto 'Confirmed'.
   , configTimeoutSeconds :: !Int
   -- ^ Tiempo máximo de espera de una respuesta.
+  , configAllowMainnet :: !Bool
+  {- ^ Permite gastar fondos reales: sin esto, 'submitTransfer' rechaza los
+  nodos de mainnet-beta. Por defecto 'False'; activarlo requiere la
+  decisión escrita que pide D5.
+  -}
   }
   deriving (Eq, Show)
 
@@ -154,8 +159,8 @@ mkConfig url commitment timeout = do
   endpoint <- mkEndpoint url
   if timeout < minTimeoutSeconds || timeout > maxTimeoutSeconds
     then Left (InvalidTimeout minTimeoutSeconds maxTimeoutSeconds)
-    else Right (Config endpoint commitment timeout)
+    else Right (Config endpoint commitment timeout False)
 
 -- | Validador local en el puerto por defecto, con @confirmed@ y 30 s.
 localConfig :: Config
-localConfig = Config (Endpoint "http://127.0.0.1:8899") Confirmed 30
+localConfig = Config (Endpoint "http://127.0.0.1:8899") Confirmed 30 False
