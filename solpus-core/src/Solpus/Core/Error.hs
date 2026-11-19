@@ -8,6 +8,7 @@ module Solpus.Core.Error
   ) where
 
 import Data.Text (Text)
+import Data.Word (Word64)
 
 -- | Error de entrada que se detecta sin tocar la red.
 data ValidationError
@@ -25,6 +26,10 @@ data ValidationError
     NegativeAmount
   | -- | Importe que no cabe en 64 bits.
     AmountOverflow
+  | -- | Una transferencia de cero lamports.
+    ZeroAmount
+  | -- | El origen de la transferencia no es la dirección de la wallet cargada.
+    TransferSourceNotWallet
   | -- | Resta que dejaría el saldo por debajo de cero.
     InsufficientLamports
   | {- | Endpoint que no es una URL http(s) válida, que lleva credenciales
@@ -58,6 +63,8 @@ data WalletError
     WalletInvalidFormat
   | -- | La mitad pública no corresponde a la semilla.
     WalletKeyMismatch
+  | -- | La operación necesita firmar y el entorno no tiene wallet.
+    WalletNotLoaded
   deriving (Eq, Show)
 
 -- | Error de la API pública de Solpus.
@@ -66,6 +73,17 @@ data SolpusError
     ValidationFailed !ValidationError
   | -- | No se pudo cargar la clave de firma.
     WalletFailed !WalletError
+  | {- | El nodo pertenece a mainnet-beta y no se permitió expresamente gastar
+    fondos reales (D5), o no se pudo comprobar a qué red pertenece.
+    -}
+    MainnetRefused
+  | {- | La transacción pudo haberse enviado, pero no se sabe si el nodo la
+    aceptó (fallo de red o respuesta ilegible tras enviarla). Lleva la firma,
+    para consultar su estado, y la última altura de bloque en que la
+    transacción aún puede entrar: pasada esa altura es seguro reintentar.
+    __No se reenvía sola__: reenviar a ciegas podría duplicar el pago.
+    -}
+    SubmissionUncertain {uncertainSignature :: !Text, uncertainLastValidBlockHeight :: !Word64}
   | -- | El nodo respondió con un error JSON-RPC.
     RpcError {rpcCode :: !Int, rpcMessage :: !Text}
   | {- | No se pudo hablar con el nodo. El texto es una descripción fija del
