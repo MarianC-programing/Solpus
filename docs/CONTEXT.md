@@ -1,6 +1,6 @@
 # Solpus — Contexto y estado de la sesión
 
-> Última actualización: 2026-11-17 · Sesión 3
+> Última actualización: 2026-11-19 · Sesión 4
 > Leer este archivo antes de continuar (regla 1 del `CLAUDE.md` general).
 
 ## 1. Qué es el proyecto
@@ -128,7 +128,7 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   Limitaciones: sin prueba unitaria de `StatusCodeException`; la ruta
   `RpcError` en vivo no se provocó; devnet sin comprobar a mano; el timeout de
   conexión lo fija el SO.
-- Gestión de wallet (issue #8, en revisión). `Solpus.Client.Wallet` (tercer
+- Gestión de wallet (issue #8, PR #24, mergeado). `Solpus.Client.Wallet` (tercer
   módulo que importa el SDK; `check-boundaries.sh` lo admite): `Wallet` abstracto,
   sin `Eq` y con `Show` que solo enseña la dirección (el del SDK imprime la
   clave). `loadWalletFile` abre sin seguir enlaces simbólicos y comprueba sobre
@@ -143,7 +143,34 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   la omisión del chequeo de dueño: no se puede probar sin root (`chown`).
   Limitaciones: solo POSIX; sin protección frente a volcados de memoria ni a
   otros procesos del mismo usuario; el entorno es más débil que el archivo.
-  El acceso a la clave para firmar llega con el #9.
+  La clave solo se usa dentro de `signInstructions` (issue #9).
+- Transferir SOL (issue #9, en revisión). `Env` lleva una wallet opcional
+  (`newEnvWith`); `submitTransfer` exige que el origen sea la wallet, consulta
+  `getGenesisHash` y rechaza mainnet-beta (`MainnetRefused`) salvo
+  `configAllowMainnet` (D5/D12); pide el blockhash a `confirmed`, firma con
+  `Tx.buildTransfer` (puro: origen, importe cero, mensaje y firma verificables) y
+  envía con preflight a `confirmed`. Nunca reintenta: un fallo de red o una
+  respuesta ilegible tras enviar devuelve `SubmissionUncertain` con la firma y
+  `lastValidBlockHeight` (el #10 añade resolverlo consultando el estado). Un
+  error JSON-RPC del nodo (`RpcError`) significa que no entró. Caso de uso
+  `Solpus.App.Transfer.transferSol` (rechaza importe cero). Pruebas: 62 en
+  `solpus-client:unit` (15 nuevas, con un nodo HTTP falso local que comprueba
+  orden de llamadas, commitment, guardia de mainnet y que solo hay un envío), 4
+  en `solpus-app` y 7 de integración contra Agave 4.4.1 (la transferencia llega,
+  la comisión que informa el nodo es 5000 y el origen paga monto más comisión).
+  Mutaciones detectadas (8): sin guardia de mainnet, preflight y blockhash a
+  `finalized`, sin chequeo de origen, firma mal extraída, reintento automático,
+  constante de mainnet alterada e incierto tratado como `RpcError`.
+  Hallazgos de la integración: fondos insuficientes llega como `RpcError -32002`
+  («custom program error: 0x1»), una cuenta sin fondos como «no record of a prior
+  credit» y un importe bajo la renta mínima a una cuenta nueva como «insufficient
+  funds for rent»; no hay mapeo dedicado porque dependería del texto del nodo.
+  Limitaciones: «confirmada» significa que el saldo llega a `confirmed` por
+  sondeo (no hay WebSocket hasta el #10); un envío incierto no se resuelve solo;
+  la comprobación de genesis añade una llamada por envío; revisión no
+  independiente (la hará la persona responsable con otro agente).
+- Integración en CI (issue #30, PR aparte): job informativo `integration` con el
+  validador fijado por `scripts/install-validator.sh`.
 
 ### Desviaciones respecto al plan (issue #2)
 - **Hooks nativos de Git en lugar de `lefthook`/`pre-commit`**: cero
@@ -179,11 +206,12 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
 
 ## 5. Siguiente paso
 
-1. Cerrar el issue #8 (PR en revisión; dos pasadas, CI y merge con
-   autorización).
-2. Issue #9: transferir SOL (añade a `Wallet` el acceso mínimo para firmar).
-3. Seguimiento de #7 (tres P3, aún sin issue): acotar el mensaje de `RpcError`,
-   revisar excepciones relanzadas y verificar redirecciones HTTP.
+1. Cerrar el issue #9 (PR en revisión; revisión independiente a cargo de la
+   persona responsable, CI y merge con autorización) y el #30 (CI).
+2. Issue #10: confirmación por WebSocket y política de reintentos; incluye
+   resolver un `SubmissionUncertain` consultando la firma.
+3. Seguimiento (P3): #25 a #29 (mensaje de `RpcError`, excepciones relanzadas,
+   redirecciones HTTP, ELOOP, `Show` de `Wallet`).
 
 ## 6. Archivos relevantes
 
