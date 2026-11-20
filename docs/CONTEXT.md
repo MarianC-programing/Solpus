@@ -169,7 +169,7 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   sondeo (no hay WebSocket hasta el #10); un envío incierto no se resuelve solo;
   la comprobación de genesis añade una llamada por envío; revisión no
   independiente (la hará la persona responsable con otro agente).
-- Integración en CI (issue #30, PR aparte): job informativo `integration` con el
+- Integración en CI (issue #30, PR #31, mergeado): job informativo `integration` con el
   validador fijado por `scripts/install-validator.sh`.
 
 ### Desviaciones respecto al plan (issue #2)
