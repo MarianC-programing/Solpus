@@ -124,7 +124,7 @@ ningún `.cabal` en `/home/marian01/ProyectosDev/`.
   excepciones del SDK se traducen a `SolpusError` sin incluir la URL. Decisión
   D11 y ADR 0001 (8–9). Pruebas: 40 de `solpus-core` y 32 de `solpus-client:unit`
   (incluye paridad con el SDK, 20.000 casos) y 3 de integración local con
-  `solana-test-validator`, que no corren en CI.
+  `solana-test-validator`, que corren también en CI (job informativo `integration`, issue #30).
   Limitaciones: sin prueba unitaria de `StatusCodeException`; la ruta
   `RpcError` en vivo no se provocó; devnet sin comprobar a mano; el timeout de
   conexión lo fija el SO.
