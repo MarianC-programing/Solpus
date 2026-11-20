@@ -15,6 +15,7 @@ library
                     Solpus.Client.InMemory
                     Solpus.Client.Info
                     Solpus.Client.Rpc
+                    Solpus.Client.Tx
                     Solpus.Client.Wallet
   build-depends:    base                >=4.18 && <4.19
                   , bytestring          >=0.11 && <0.12
@@ -39,16 +40,19 @@ test-suite unit
   other-modules:    Test.Config
                     Test.InMemory
                     Test.Rpc
+                    Test.Transfer
                     Test.Wallet
   hs-source-dirs:   test
   default-language: GHC2021
   build-depends:    base                >=4.18 && <4.19
                   , bytestring          >=0.11 && <0.12
                   , directory
+                  , ed25519
                   , filepath
                   , hedgehog
                   , http-client
                   , jsonrpc-tinyclient  >=1.1  && <1.2
+                  , network
                   , solana-haskell-sdk  ==1.4.0.0
                   , solpus-client
                   , solpus-core
@@ -67,6 +71,7 @@ test-suite integration
   hs-source-dirs:   test-integration
   default-language: GHC2021
   build-depends:    base                >=4.18 && <4.19
+                  , bytestring          >=0.11 && <0.12
                   , directory
                   , filepath
                   , process
@@ -77,5 +82,6 @@ test-suite integration
                   , tasty-hunit
                   , text                >=2.0  && <2.1
                   , time
+                  , unix                >=2.8  && <2.9
                   , web3-provider       >=1.1  && <1.2
                   , websockets

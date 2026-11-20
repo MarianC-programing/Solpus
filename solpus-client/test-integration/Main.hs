@@ -15,22 +15,36 @@ aborta en lugar de mezclar pruebas con un estado ajeno.
 module Main (main) where
 
 import Control.Concurrent (threadDelay)
-import Control.Exception (SomeException, try)
+import Control.Exception (SomeException, bracket, try)
 import Control.Monad (when)
+import Data.ByteString qualified as BS
+import Data.ByteString.Char8 qualified as BC
 import Data.Either (isRight)
+import Data.List (intercalate)
 import Data.Maybe (fromMaybe)
 import Data.Text qualified as T
 import Data.Time.Clock.POSIX (getPOSIXTime)
-import Network.Solana.Core.Crypto (SolanaPublicKey, SolanaSignature, createSolanaKeyPair)
+import Network.Solana.Core.Block (BlockHash)
+import Network.Solana.Core.Crypto
+  ( SolanaPublicKey
+  , SolanaSignature
+  , createSolanaKeyPair
+  , fromBase64String
+  , getSolanaPrivateKeyRaw
+  , toBase64String
+  )
 import Network.Solana.RPC.HTTP.Account qualified as SDK (getBalance)
-import Network.Solana.RPC.HTTP.Transaction (requestAirdrop)
+import Network.Solana.RPC.HTTP.Block (getTheLatestBlockhash)
+import Network.Solana.RPC.HTTP.Transaction (getFeeForMessage, requestAirdrop)
 import Network.Solana.RPC.WebSocket
 import Network.Web3.Provider (Provider (HttpProvider), runWeb3')
 import Network.WebSockets qualified as WS
-import Solpus.Client.Class (MonadSolanaRead (..))
+import Solpus.Client.Class (MonadSolana (..), MonadSolanaRead (..), Transfer (..))
 import Solpus.Client.Config (Config (..), localConfig)
 import Solpus.Client.Rpc
-import Solpus.Core.Error (SolpusError)
+import Solpus.Client.Tx (SignedTransfer (..), buildTransfer)
+import Solpus.Client.Wallet (Wallet, loadWalletFile)
+import Solpus.Core.Error (SolpusError (..))
 import Solpus.Core.Lamports (Lamports (..))
 import Solpus.Core.Types (Address, Commitment (..))
 import Solpus.Core.Validate (parseAddress)
@@ -39,6 +53,8 @@ import System.Environment (lookupEnv)
 import System.Exit (exitFailure, exitSuccess)
 import System.FilePath ((</>))
 import System.IO (IOMode (WriteMode), hPutStrLn, hSetEncoding, openFile, stderr, stdout, utf8)
+import System.Posix.Files (setFileMode)
+import System.Posix.Temp (mkdtemp)
 import System.Process
   ( CreateProcess (..)
   , ProcessHandle
@@ -109,7 +125,104 @@ tests confirmedEnv finalizedEnv =
           finalized <- balanceOf finalizedEnv address
           pure (finalized == Right (Lamports 1_000_000_000))
         balanceOf confirmedEnv address >>= (@?= Right (Lamports 1_000_000_000))
+    , transferTests
     ]
+
+-- | Transferencias reales contra el validador (issue #9).
+transferTests :: TestTree
+transferTests =
+  testGroup
+    "transferencias"
+    [ testCase "la transferencia llega y el origen paga monto más la comisión del nodo" $
+        withWallet $ \key address wallet -> do
+          fund key 2_000_000_000
+          env <- newEnvWith localConfig (Just wallet)
+          (_, recipient) <- newKey
+          let amount = 500_000_000
+              transfer = Transfer address recipient (Lamports amount)
+          result <- runSolpusIO env (submitTransfer transfer)
+          signature <- either (\e -> assertFailure ("la transferencia falló: " <> show e)) pure result
+          putStrLn ("  [informativo] firma de la transferencia: " <> show signature)
+          -- «Confirmada» en #9: el saldo del destino llega a confirmed.
+          eventually 30 $ (== Right (Lamports amount)) <$> balanceOf' recipient
+          fee <- nodeFee wallet transfer
+          putStrLn ("  [informativo] comisión que informa el nodo: " <> show fee)
+          eventually 30 $
+            (== Right (Lamports (2_000_000_000 - amount - fromIntegral fee))) <$> balanceOf' address
+    , testCase "fondos insuficientes: el nodo rechaza, no queda incierto y el saldo no cambia" $
+        withWallet $ \key address wallet -> do
+          fund key 1_000_000_000
+          env <- newEnvWith localConfig (Just wallet)
+          (_, recipient) <- newKey
+          result <- runSolpusIO env (submitTransfer (Transfer address recipient (Lamports 10_000_000_000)))
+          putStrLn ("  [informativo] error ante fondos insuficientes: " <> show result)
+          case result of
+            Left (RpcError _ _) -> pure ()
+            other -> assertFailure ("se esperaba un RpcError del nodo: " <> show other)
+          balanceOf' address >>= (@?= Right (Lamports 1_000_000_000))
+          balanceOf' recipient >>= (@?= Right (Lamports 0))
+    , testCase "un importe por debajo de la renta mínima a una cuenta nueva lo rechaza el nodo" $
+        withWallet $ \key address wallet -> do
+          fund key 1_000_000_000
+          env <- newEnvWith localConfig (Just wallet)
+          (_, recipient) <- newKey
+          result <- runSolpusIO env (submitTransfer (Transfer address recipient (Lamports 1)))
+          putStrLn ("  [informativo] error por renta mínima: " <> show result)
+          case result of
+            Left (RpcError _ _) -> pure ()
+            other -> assertFailure ("se esperaba un RpcError del nodo: " <> show other)
+          balanceOf' address >>= (@?= Right (Lamports 1_000_000_000))
+    , testCase "una cuenta sin fondos no puede transferir" $
+        withWallet $ \_ address wallet -> do
+          env <- newEnvWith localConfig (Just wallet)
+          (_, recipient) <- newKey
+          result <- runSolpusIO env (submitTransfer (Transfer address recipient (Lamports 1)))
+          putStrLn ("  [informativo] error de una cuenta sin fondos: " <> show result)
+          case result of
+            Left (RpcError _ _) -> pure ()
+            other -> assertFailure ("se esperaba un RpcError del nodo: " <> show other)
+    ]
+ where
+  balanceOf' address = do
+    env <- newEnv localConfig
+    balanceOf env address
+
+-- | Genera una wallet nueva, la escribe como archivo 0600 y la carga.
+withWallet :: (SolanaPublicKey -> Address -> Wallet -> IO a) -> IO a
+withWallet action = do
+  tmp <- getTemporaryDirectory
+  bracket (mkdtemp (tmp </> "solpus-it-wallet-")) removeDirectoryRecursive $ \dir -> do
+    (key, secret) <- createSolanaKeyPair
+    let path = dir </> "id.json"
+        raw = BS.unpack (getSolanaPrivateKeyRaw secret)
+    BC.writeFile path (BC.pack ("[" <> intercalate "," (map show raw) <> "]"))
+    setFileMode path 0o600
+    wallet <-
+      loadWalletFile path >>= either (\e -> assertFailure ("no se cargó la wallet: " <> show e)) pure
+    address <- either (assertFailure . show) pure (parseAddress (T.pack (show key)))
+    action key address wallet
+
+-- | Airdrop y espera a que llegue a @confirmed@.
+fund :: SolanaPublicKey -> Integer -> IO ()
+fund key lamports = airdrop key lamports >>= awaitConfirmed
+
+{- | Comisión que informa el propio nodo para el mensaje de esta transferencia
+(se espera a que la conozca a @finalized@, que es lo que consulta el SDK).
+-}
+nodeFee :: Wallet -> Transfer -> IO Integer
+nodeFee wallet transfer = do
+  blockhash <- latestBlockhash
+  signed <- either (assertFailure . show) pure (buildTransfer wallet blockhash transfer)
+  let message = toBase64String (BS.drop 65 (fromBase64String (signedPayload signed)))
+  result <- runWeb3' provider (getFeeForMessage message)
+  case result of
+    Right (Just fee) -> pure (fromIntegral fee)
+    other -> assertFailure ("el nodo no informó la comisión: " <> show other)
+
+latestBlockhash :: IO BlockHash
+latestBlockhash = do
+  result <- runWeb3' provider getTheLatestBlockhash
+  either (\e -> assertFailure ("no se obtuvo el blockhash: " <> show e)) pure result
 
 -- | Clave nueva del SDK y su dirección en el dominio de Solpus.
 newKey :: IO (SolanaPublicKey, Address)

@@ -58,6 +58,7 @@ Notas:
 | D9 | Sin librería de logging en la primera versión; la CLI controla la salida | Menos dependencias y menos superficie de fuga de secretos |
 | D10 | La confirmación pasa por `awaitSignature` con transporte WebSocket que aportamos nosotros | El SDK es agnóstico del transporte; `wss://` se resuelve cambiando a `wuss` |
 | D11 | Las lecturas usan commitment propio (`getBalance` con llamada propia) y las URLs de nodo se tratan como secreto | El `getBalance` del SDK no admite commitment y lee a `finalized` (saldo 0 tras un airdrop confirmado); las URLs suelen llevar claves de API |
+| D12 | Transferir usa `confirmed` para el blockhash y el preflight, rechaza mainnet por genesis hash salvo permiso expreso y nunca reintenta; un envío dudoso devuelve la firma y la última altura válida | Con los valores por defecto del SDK (`finalized`) el nodo vería saldo cero tras un airdrop; un reintento ciego podría duplicar el pago; la clave de un nodo real no debe gastar fondos reales por accidente |
 
 ## 4. Arquitectura
 

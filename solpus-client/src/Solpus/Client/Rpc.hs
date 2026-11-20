@@ -2,8 +2,8 @@
 
 {- | Implementación real de 'MonadSolanaRead' sobre @solana-haskell-sdk@.
 
-Es, junto con @Solpus.Client.Tx@, el único módulo que importa el SDK
-(comprobado por @scripts/check-boundaries.sh@).
+Es, junto con @Solpus.Client.Tx@ y @Solpus.Client.Wallet@, uno de los pocos
+módulos que importan el SDK (comprobado por @scripts/check-boundaries.sh@).
 
 Decisiones tomadas tras el spike #4 y la lectura del SDK 1.4.0.0:
 
@@ -15,11 +15,19 @@ Decisiones tomadas tras el spike #4 y la lectura del SDK 1.4.0.0:
   configuración para leer al nivel pedido en 'Config'.
 * __Nunca se escribe la URL del nodo__ en un error: puede llevar una clave de
   API, y @show@ de una 'HttpException' incluye la petición completa.
+* __Enviar una transferencia__ ('submitTransfer') usa @confirmed@ tanto para
+  el blockhash como para la comprobación previa del nodo (preflight): con los
+  valores por defecto del SDK se lee a @finalized@, y tras un airdrop o una
+  transferencia recién confirmados el nodo vería saldo cero. Antes de enviar
+  se consulta el genesis hash y se rechaza mainnet-beta salvo permiso expreso.
+  __Nunca se reintenta__ un envío: si el resultado es incierto se devuelve
+  'SubmissionUncertain' con la firma y la última altura válida.
 -}
 module Solpus.Client.Rpc
   ( -- * Ejecución
     Env
   , newEnv
+  , newEnvWith
   , SolpusIO
   , runSolpusIO
 
@@ -27,12 +35,15 @@ module Solpus.Client.Rpc
   , classifyJsonRpc
   , classifyHttp
   , classifyWeb3
+  , mainnetGenesisHash
   ) where
 
 import Control.Exception (Handler (..), catches)
+import Control.Monad.Trans.Except (ExceptT (..), except, runExceptT)
 import Control.Monad.Trans.Reader (ReaderT (..))
 import Data.Text (Text)
 import Data.Text qualified as T
+import Data.Word (Word64)
 import Network.HTTP.Client
   ( HttpException (..)
   , HttpExceptionContent (..)
@@ -47,37 +58,56 @@ import Network.HTTP.Types.Status (statusCode)
 import Network.JsonRpc.TinyClient (JsonRpc (..), JsonRpcException (..))
 import Network.JsonRpc.TinyClient qualified as Rpc
 import Network.Solana.Core.Account (Lamport (..))
-import Network.Solana.Core.Crypto (SolanaPublicKey, mkPublicKeyFromString)
+import Network.Solana.Core.Crypto
+  ( SolanaPublicKey
+  , getSolanaSignatureRaw
+  , mkPublicKeyFromString
+  , toBase58String
+  )
+import Network.Solana.RPC.HTTP.Block (LatestBlockHash (..))
+import Network.Solana.RPC.HTTP.Ledger (getGenesisHash)
+import Network.Solana.RPC.HTTP.Transaction
+  ( defaultRpcSendTransactionConfig
+  , sendTransaction'
+  )
 import Network.Solana.RPC.HTTP.Types
   ( ConfigurationObject (..)
   , RPCResponse (..)
   , defaultConfigObject
   )
 import Network.Web3.Provider (Provider (HttpProvider), Web3Error (..), runWeb3With)
-import Solpus.Client.Class (MonadSolanaRead (..))
+import Solpus.Client.Class (MonadSolana (..), MonadSolanaRead (..), Transfer (..))
 import Solpus.Client.Config (Config (..), endpointText)
-import Solpus.Core.Error (SolpusError (..))
+import Solpus.Client.Tx (SignedTransfer (..), buildTransfer)
+import Solpus.Client.Wallet (Wallet, walletAddress)
+import Solpus.Core.Error (SolpusError (..), ValidationError (..), WalletError (..))
 import Solpus.Core.Lamports (Lamports (..))
-import Solpus.Core.Types (Address, addressText, commitmentText)
+import Solpus.Core.Types (Address, Signature, addressText, commitmentText, signatureText)
 
 -- | Configuración y gestor de conexiones HTTP compartidos entre llamadas.
 data Env = Env
   { envConfig :: !Config
   , envManager :: !Manager
+  , envWallet :: !(Maybe Wallet)
+  -- ^ Clave de firma. Sin ella solo funcionan las lecturas.
   }
 
 {- | Crea el entorno. Aplica el timeout de respuesta de la configuración; el
 de conexión lo fija el sistema operativo.
 -}
 newEnv :: Config -> IO Env
-newEnv config = do
+newEnv config = newEnvWith config Nothing
+
+-- | Como 'newEnv', con una wallet opcional para poder enviar transferencias.
+newEnvWith :: Config -> Maybe Wallet -> IO Env
+newEnvWith config wallet = do
   manager <-
     newManager
       tlsManagerSettings
         { managerResponseTimeout =
             responseTimeoutMicro (configTimeoutSeconds config * 1_000_000)
         }
-  pure (Env config manager)
+  pure (Env config manager wallet)
 
 -- | Mónada que ejecuta operaciones contra un nodo real.
 newtype SolpusIO a = SolpusIO (ReaderT Env IO a)
@@ -88,6 +118,100 @@ runSolpusIO env (SolpusIO action) = runReaderT action env
 
 instance MonadSolanaRead SolpusIO where
   getBalance address = SolpusIO (ReaderT (`fetchBalance` address))
+
+instance MonadSolana SolpusIO where
+  submitTransfer transfer = SolpusIO (ReaderT (`sendTransfer` transfer))
+
+{- | Genesis hash de mainnet-beta (comprobado contra la documentación de la
+Fundación Solana y un nodo de mainnet en vivo).
+-}
+mainnetGenesisHash :: String
+mainnetGenesisHash = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"
+
+{- | Envía una transferencia. Las comprobaciones locales (wallet presente,
+origen correcto) fallan antes de tocar la red; después se comprueba que el
+nodo no sea mainnet, se obtiene un blockhash a @confirmed@, se firma y se
+envía con preflight a @confirmed@. No hay reintentos.
+-}
+sendTransfer :: Env -> Transfer -> IO (Either SolpusError Signature)
+sendTransfer env transfer = case envWallet env of
+  Nothing -> pure (Left (WalletFailed WalletNotLoaded))
+  Just wallet
+    | transferFrom transfer /= walletAddress wallet ->
+        pure (Left (ValidationFailed TransferSourceNotWallet))
+    | otherwise -> runExceptT $ do
+        ExceptT (guardMainnet env)
+        latest <- ExceptT (fetchLatestBlockhash env)
+        signed <- except (buildTransfer wallet (blockhash latest) transfer)
+        ExceptT (sendSigned env signed (lastValidBlockHeight latest))
+
+{- | Rechaza mainnet-beta salvo permiso expreso. Si no se puede comprobar a qué
+red pertenece el nodo, falla (no envía a ciegas).
+-}
+guardMainnet :: Env -> IO (Either SolpusError ())
+guardMainnet env
+  | configAllowMainnet (envConfig env) = pure (Right ())
+  | otherwise = do
+      result <-
+        translating
+          (either (Left . classifyWeb3) Right <$> runWeb3With (envManager env) (providerOf env) getGenesisHash)
+      pure $ case result of
+        Left err -> Left err
+        Right genesis
+          | show genesis == mainnetGenesisHash -> Left MainnetRefused
+          | otherwise -> Right ()
+
+-- | Blockhash a @confirmed@ (el del SDK usaría @finalized@ y vence antes).
+fetchLatestBlockhash :: Env -> IO (Either SolpusError LatestBlockHash)
+fetchLatestBlockhash env =
+  translating $
+    either (Left . classifyWeb3) (Right . value)
+      <$> runWeb3With (envManager env) (providerOf env) (getLatestBlockhashWith confirmedOptions)
+
+{- | Envía la transacción ya firmada. Un error JSON-RPC del nodo (por ejemplo
+una comprobación previa fallida) significa que no entró; cualquier otro fallo
+después de enviar es incierto y devuelve la firma y la última altura válida.
+-}
+sendSigned :: Env -> SignedTransfer -> Word64 -> IO (Either SolpusError Signature)
+sendSigned env signed lastValid =
+  action
+    `catches` [ Handler onJsonRpc
+              , Handler onHttp
+              ]
+ where
+  signature = signedSignature signed
+  uncertain = SubmissionUncertain (signatureText signature) lastValid
+  options = defaultRpcSendTransactionConfig{preflightCommitment = Just "confirmed"}
+  action = do
+    result <-
+      runWeb3With
+        (envManager env)
+        (providerOf env)
+        (sendTransaction' (signedPayload signed) options)
+    pure $ case result of
+      Left _ -> Left uncertain
+      Right nodeSignature
+        | T.pack (toBase58String (getSolanaSignatureRaw nodeSignature)) == signatureText signature ->
+            Right signature
+        | otherwise -> Left (InternalError "el nodo devolvió una firma distinta de la calculada")
+  onJsonRpc (CallException err) = pure (Left (classifyJsonRpc (CallException err)))
+  onJsonRpc _ = pure (Left uncertain)
+  onHttp err@(InvalidUrlException _ _) = pure (Left (classifyHttp err))
+  onHttp _ = pure (Left uncertain)
+
+providerOf :: Env -> Provider
+providerOf = HttpProvider . T.unpack . endpointText . configEndpoint . envConfig
+
+-- | Lecturas y envío a @confirmed@, independientemente de la configuración.
+confirmedOptions :: ConfigurationObject
+confirmedOptions = defaultConfigObject{commitment = Just "confirmed"}
+
+-- | @getLatestBlockhash@ con objeto de configuración (commitment).
+getLatestBlockhashWith ::
+  (JsonRpc m) =>
+  ConfigurationObject ->
+  m (RPCResponse LatestBlockHash)
+getLatestBlockhashWith = remote "getLatestBlockhash"
 
 fetchBalance :: Env -> Address -> IO (Either SolpusError Lamports)
 fetchBalance env address =
